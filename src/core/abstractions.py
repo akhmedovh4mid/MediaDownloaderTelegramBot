@@ -56,6 +56,8 @@ class AbstractServiceAudio(ABC):
 @dataclass
 class AbstractServiceData(ABC):
     url: str
+    is_video: bool = False
+    is_image: bool = False
     path: Optional[Path] = None
     title: Optional[str] = None
     description: Optional[str] = None
