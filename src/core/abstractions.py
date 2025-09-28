@@ -33,7 +33,7 @@ class AbstractServiceImage(ABC):
             Dictionary containing all image attributes
         """
         return {
-            "id": self.id,
+            "id": str(self.id),
             "url": self.url,
             "name": self.name,
             "width": self.width,
@@ -80,7 +80,7 @@ class AbstractServiceVideo(ABC):
             Dictionary containing all video attributes
         """
         return {
-            "id": self.id,
+            "id": str(self.id),
             "url": self.url,
             "name": self.name,
             "fps": self.fps,
@@ -126,7 +126,7 @@ class AbstractServiceAudio(ABC):
             Dictionary containing all audio attributes
         """
         return {
-            "id": self.id,
+            "id": str(self.id),
             "url": self.url,
             "name": self.name,
             "cover": self.cover,
@@ -224,7 +224,7 @@ class AbstractServiceResult(ABC):
         return {
             "status": self.status,
             "context": self.context,
-            "code": self.code,
+            "code": self.code.value,
             "data": self.data.to_dict(),
         }
 
