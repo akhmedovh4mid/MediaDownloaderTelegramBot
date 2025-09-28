@@ -43,7 +43,7 @@ class ContentType(Enum):
         UNSUPPORTED = "unsupported"
         
 
-class ErrorCode(Enum):
+class RedditErrorCode(Enum):
     """Enum representing error codes for Reddit operations."""
     
     # Success
@@ -112,13 +112,13 @@ class RedditAudio(AbstractServiceAudio):
 @dataclass
 class RedditResult(AbstractServiceResult):
     """Result of Reddit operations."""
-    code: ErrorCode = field(default=ErrorCode.SUCCESS)
+    code: RedditErrorCode = field(default=RedditErrorCode.SUCCESS)
 
 
 # ======= ExceptionClasses =======
 class ExtractInfoNotCalledError(Exception):
     """Exception raised when download is attempted before extract_info."""
-    def __init__(self, message: str, code: ErrorCode = ErrorCode.EXTRACT_INFO_NOT_CALLED):
+    def __init__(self, message: str, code: RedditErrorCode = RedditErrorCode.EXTRACT_INFO_NOT_CALLED):
         super().__init__(message)
         self.code = code
         self.message = message
@@ -126,7 +126,7 @@ class ExtractInfoNotCalledError(Exception):
 
 class CookieFileNotFoundError(FileNotFoundError):
     """Exception raised when cookie file is not found."""
-    def __init__(self, message: str, code: ErrorCode = ErrorCode.COOKIE_FILE_NOT_FOUND):
+    def __init__(self, message: str, code: RedditErrorCode = RedditErrorCode.COOKIE_FILE_NOT_FOUND):
         super().__init__(message)
         self.code = code
         self.message = message
@@ -135,7 +135,7 @@ class CookieFileNotFoundError(FileNotFoundError):
 
 class InvalidRedditUrlError(ValueError):
     """Exception raised for invalid Reddit URLs."""
-    def __init__(self, message: str, code: ErrorCode = ErrorCode.INVALID_URL):
+    def __init__(self, message: str, code: RedditErrorCode = RedditErrorCode.INVALID_URL):
         super().__init__(message)
         self.code = code
         self.message = message
@@ -143,7 +143,7 @@ class InvalidRedditUrlError(ValueError):
 
 class UnsupportedContentTypeError(Exception):
     """Exception raised for unsupported content types."""
-    def __init__(self, message: str, code: ErrorCode = ErrorCode.UNSUPPORTED_CONTENT):
+    def __init__(self, message: str, code: RedditErrorCode = RedditErrorCode.UNSUPPORTED_CONTENT):
         super().__init__(message)
         self.code = code
         self.message = message
@@ -194,7 +194,7 @@ class RedditDownloader(AbstractServiceDownloader):
         if self.cookies_path and not self.cookies_path.exists():
             error_msg = f"Cookie file not found: {self.cookies_path}"
             logger.error(error_msg)
-            raise CookieFileNotFoundError(error_msg, ErrorCode.COOKIE_FILE_NOT_FOUND)
+            raise CookieFileNotFoundError(error_msg, RedditErrorCode.COOKIE_FILE_NOT_FOUND)
 
         try:
             # Initialize Reddit client
@@ -289,7 +289,7 @@ class RedditDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.GALLERY_DATA_MISSING,
+                code=RedditErrorCode.GALLERY_DATA_MISSING,
             )
             return
         
@@ -302,7 +302,7 @@ class RedditDownloader(AbstractServiceDownloader):
                     status="error",
                     data=self._data,
                     context=error_msg,
-                    code=ErrorCode.GALLERY_EMPTY,
+                    code=RedditErrorCode.GALLERY_EMPTY,
                 )
                 return
             
@@ -339,7 +339,7 @@ class RedditDownloader(AbstractServiceDownloader):
                     status="error",
                     data=self._data,
                     context=error_msg,
-                    code=ErrorCode.MEDIA_METADATA_MISSING,
+                    code=RedditErrorCode.MEDIA_METADATA_MISSING,
                 )
                 
         except Exception as e:
@@ -349,7 +349,7 @@ class RedditDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.UNEXPECTED_ERROR,
+                code=RedditErrorCode.UNEXPECTED_ERROR,
             )
         
     def _get_extension(self, url: str) -> Tuple[str, str]:
@@ -446,7 +446,7 @@ class RedditDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.IMAGE_EXTRACTION_FAILED,
+                code=RedditErrorCode.IMAGE_EXTRACTION_FAILED,
             )
         
     def _extract_video(self, submission: Submission) -> None:
@@ -468,7 +468,7 @@ class RedditDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.EXTRACTOR_ERROR,
+                code=RedditErrorCode.EXTRACTOR_ERROR,
             )
             return
         
@@ -479,7 +479,7 @@ class RedditDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.DOWNLOAD_ERROR,
+                code=RedditErrorCode.DOWNLOAD_ERROR,
             )
             return
     
@@ -490,7 +490,7 @@ class RedditDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.UNEXPECTED_ERROR,
+                code=RedditErrorCode.UNEXPECTED_ERROR,
             )
             return
         
@@ -602,7 +602,7 @@ class RedditDownloader(AbstractServiceDownloader):
                 status="error",
                 context=error_msg,
                 data=RedditData(url=url),
-                code=ErrorCode.EMPTY_URL,
+                code=RedditErrorCode.EMPTY_URL,
             )
             
         if not self._validate_reddit_url(url):
@@ -612,7 +612,7 @@ class RedditDownloader(AbstractServiceDownloader):
                 status="error",
                 context=error_msg,
                 data=RedditData(url=url),
-                code=ErrorCode.INVALID_URL,
+                code=RedditErrorCode.INVALID_URL,
             )
             
         try:
@@ -643,7 +643,7 @@ class RedditDownloader(AbstractServiceDownloader):
                     status="error",
                     data=self._data,
                     context=error_msg,
-                    code=ErrorCode.UNSUPPORTED_CONTENT,
+                    code=RedditErrorCode.UNSUPPORTED_CONTENT,
                 )
                 
             return self._last_result
@@ -655,7 +655,7 @@ class RedditDownloader(AbstractServiceDownloader):
                 status="error",
                 context=error_msg,
                 data=RedditData(url=url),
-                code=ErrorCode.UNEXPECTED_ERROR,
+                code=RedditErrorCode.UNEXPECTED_ERROR,
             )
         
     def download_media(
@@ -713,7 +713,7 @@ class RedditDownloader(AbstractServiceDownloader):
             return RedditResult(
                 status="error",
                 context=error_msg,
-                code=ErrorCode.DOWNLOAD_ERROR,
+                code=RedditErrorCode.DOWNLOAD_ERROR,
                 data=RedditData(url=url)
             )
         except Exception as e:
@@ -722,11 +722,11 @@ class RedditDownloader(AbstractServiceDownloader):
             return RedditResult(
                 status="error",
                 context=error_msg,
-                code=ErrorCode.UNEXPECTED_ERROR,
+                code=RedditErrorCode.UNEXPECTED_ERROR,
                 data=RedditData(url=url)
             )
 
-    def get_error_description(self, code: ErrorCode) -> str:
+    def get_error_description(self, code: RedditErrorCode) -> str:
         """
         Get human-readable description for error code.
         
@@ -737,28 +737,28 @@ class RedditDownloader(AbstractServiceDownloader):
             Description string
         """
         descriptions = {
-            ErrorCode.SUCCESS: "Operation completed successfully",
-            ErrorCode.INVALID_URL: "The provided Reddit URL is invalid or not supported",
-            ErrorCode.EMPTY_URL: "Empty or invalid URL provided",
-            ErrorCode.UNSUPPORTED_CONTENT: "The Reddit content type is not supported",
-            ErrorCode.AUTHENTICATION_FAILED: "Reddit API authentication failed",
-            ErrorCode.API_ERROR: "Reddit API returned an error",
-            ErrorCode.RATELIMIT_EXCEEDED: "Reddit API rate limit exceeded",
-            ErrorCode.CONNECTION_ERROR: "Network connection error occurred",
-            ErrorCode.DOWNLOAD_ERROR: "Media download failed",
-            ErrorCode.EXTRACTOR_ERROR: "Media extraction failed",
-            ErrorCode.PROXY_ERROR: "Proxy connection error",
-            ErrorCode.GALLERY_DATA_MISSING: "Gallery data not found in post",
-            ErrorCode.GALLERY_EMPTY: "Gallery contains no items",
-            ErrorCode.VIDEO_EXTRACTION_FAILED: "Video content extraction failed",
-            ErrorCode.IMAGE_EXTRACTION_FAILED: "Image content extraction failed",
-            ErrorCode.MEDIA_METADATA_MISSING: "Media metadata not available",
-            ErrorCode.PREVIEW_DATA_MISSING: "Preview data not available",
-            ErrorCode.COOKIE_FILE_NOT_FOUND: "Cookie file not found",
-            ErrorCode.OUTPUT_PATH_ERROR: "Output path error",
-            ErrorCode.FILE_WRITE_ERROR: "File write error",
-            ErrorCode.UNEXPECTED_ERROR: "An unexpected error occurred",
-            ErrorCode.INITIALIZATION_ERROR: "Failed to initialize downloader",
-            ErrorCode.EXTRACT_INFO_NOT_CALLED: "extract_info() must be called before download",
+            RedditErrorCode.SUCCESS: "Operation completed successfully",
+            RedditErrorCode.INVALID_URL: "The provided Reddit URL is invalid or not supported",
+            RedditErrorCode.EMPTY_URL: "Empty or invalid URL provided",
+            RedditErrorCode.UNSUPPORTED_CONTENT: "The Reddit content type is not supported",
+            RedditErrorCode.AUTHENTICATION_FAILED: "Reddit API authentication failed",
+            RedditErrorCode.API_ERROR: "Reddit API returned an error",
+            RedditErrorCode.RATELIMIT_EXCEEDED: "Reddit API rate limit exceeded",
+            RedditErrorCode.CONNECTION_ERROR: "Network connection error occurred",
+            RedditErrorCode.DOWNLOAD_ERROR: "Media download failed",
+            RedditErrorCode.EXTRACTOR_ERROR: "Media extraction failed",
+            RedditErrorCode.PROXY_ERROR: "Proxy connection error",
+            RedditErrorCode.GALLERY_DATA_MISSING: "Gallery data not found in post",
+            RedditErrorCode.GALLERY_EMPTY: "Gallery contains no items",
+            RedditErrorCode.VIDEO_EXTRACTION_FAILED: "Video content extraction failed",
+            RedditErrorCode.IMAGE_EXTRACTION_FAILED: "Image content extraction failed",
+            RedditErrorCode.MEDIA_METADATA_MISSING: "Media metadata not available",
+            RedditErrorCode.PREVIEW_DATA_MISSING: "Preview data not available",
+            RedditErrorCode.COOKIE_FILE_NOT_FOUND: "Cookie file not found",
+            RedditErrorCode.OUTPUT_PATH_ERROR: "Output path error",
+            RedditErrorCode.FILE_WRITE_ERROR: "File write error",
+            RedditErrorCode.UNEXPECTED_ERROR: "An unexpected error occurred",
+            RedditErrorCode.INITIALIZATION_ERROR: "Failed to initialize downloader",
+            RedditErrorCode.EXTRACT_INFO_NOT_CALLED: "extract_info() must be called before download",
         }
         return descriptions.get(code, "Unknown error")

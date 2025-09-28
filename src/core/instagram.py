@@ -44,7 +44,7 @@ class ContentType(Enum):
     SIDECAR = "GraphSidecar"
     
     
-class ErrorCode(Enum):
+class InstagramErrorCode(Enum):
     """Enum representing error codes for Instagram operations."""
     
     # Success
@@ -107,13 +107,13 @@ class InstagramAudio(AbstractServiceAudio):
 @dataclass
 class InstagramResult(AbstractServiceResult):
     """Result of Instagram operations."""
-    code: ErrorCode = field(default=ErrorCode.SUCCESS)
+    code: InstagramErrorCode = field(default=InstagramErrorCode.SUCCESS)
 
 
 # ======= ExceptionClasses =======
 class InstagramSessionError(Exception):
     """Exception raised for Instagram session errors."""
-    def __init__(self, message: str, code: ErrorCode = ErrorCode.AUTHENTICATION_FAILED):
+    def __init__(self, message: str, code: InstagramErrorCode = InstagramErrorCode.AUTHENTICATION_FAILED):
         super().__init__(message)
         self.code = code
         self.message = message
@@ -121,7 +121,7 @@ class InstagramSessionError(Exception):
 
 class InvalidInstagramUrlError(ValueError):
     """Exception raised for invalid Instagram URLs."""
-    def __init__(self, message: str, code: ErrorCode = ErrorCode.INVALID_URL):
+    def __init__(self, message: str, code: InstagramErrorCode = InstagramErrorCode.INVALID_URL):
         super().__init__(message)
         self.code = code
         self.message = message
@@ -129,7 +129,7 @@ class InvalidInstagramUrlError(ValueError):
 
 class InstagramPostNotFoundError(Exception):
     """Exception raised when post is not found."""
-    def __init__(self, message: str, code: ErrorCode = ErrorCode.POST_NOT_FOUND):
+    def __init__(self, message: str, code: InstagramErrorCode = InstagramErrorCode.POST_NOT_FOUND):
         super().__init__(message)
         self.code = code
         self.message = message
@@ -137,7 +137,7 @@ class InstagramPostNotFoundError(Exception):
 
 class ExtractInfoNotCalledError(Exception):
     """Exception raised when download is attempted before extract_info."""
-    def __init__(self, message: str, code: ErrorCode = ErrorCode.EXTRACTION_ERROR):
+    def __init__(self, message: str, code: InstagramErrorCode = InstagramErrorCode.EXTRACTION_ERROR):
         super().__init__(message)
         self.code = code
         self.message = message
@@ -216,17 +216,17 @@ class InstagramDownloader(AbstractServiceDownloader):
         except ConnectionException as e:
             error_msg = f"Connection error during login: {e}"
             logger.error(error_msg)
-            raise InstagramSessionError(error_msg, ErrorCode.CONNECTION_ERROR)
+            raise InstagramSessionError(error_msg, InstagramErrorCode.CONNECTION_ERROR)
         
         except QueryReturnedBadRequestException as e:
             error_msg = f"Authentication failed: {e}"
             logger.error(error_msg)
-            raise InstagramSessionError(error_msg, ErrorCode.AUTHENTICATION_FAILED)
+            raise InstagramSessionError(error_msg, InstagramErrorCode.AUTHENTICATION_FAILED)
         
         except Exception as e:
             error_msg = f"Unexpected error during initialization: {e}"
             logger.error(error_msg)
-            raise InstagramSessionError(error_msg, ErrorCode.INITIALIZATION_ERROR)
+            raise InstagramSessionError(error_msg, InstagramErrorCode.INITIALIZATION_ERROR)
         
     def _validate_instagram_url(self, url: str) -> bool:
         """
@@ -289,7 +289,7 @@ class InstagramDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.EXTRACTION_ERROR,
+                code=InstagramErrorCode.EXTRACTION_ERROR,
             )
             return
         
@@ -318,7 +318,7 @@ class InstagramDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.CONTENT_NOT_SUPPORTED,
+                code=InstagramErrorCode.CONTENT_NOT_SUPPORTED,
             )
     
     def _extract_video_content(self, data: dict) -> None:
@@ -433,7 +433,7 @@ class InstagramDownloader(AbstractServiceDownloader):
             self._last_result = InstagramResult(
                 status="error",
                 context=error_msg,
-                code=ErrorCode.EMPTY_URL,
+                code=InstagramErrorCode.EMPTY_URL,
                 data=InstagramData(url=url),
             )
             return self._last_result
@@ -444,7 +444,7 @@ class InstagramDownloader(AbstractServiceDownloader):
             self._last_result = InstagramResult(
                 status="error",
                 context=error_msg,
-                code=ErrorCode.INVALID_URL,
+                code=InstagramErrorCode.INVALID_URL,
                 data=InstagramData(url=url),
             )
             return self._last_result
@@ -458,7 +458,7 @@ class InstagramDownloader(AbstractServiceDownloader):
                 status="error",
                 context=error_msg,
                 data=InstagramData(url=url),
-                code=ErrorCode.INVALID_SHORTCODE,
+                code=InstagramErrorCode.INVALID_SHORTCODE,
             )
             return self._last_result
         
@@ -488,7 +488,7 @@ class InstagramDownloader(AbstractServiceDownloader):
             self._last_result = InstagramResult(
                 status="error",
                 context=error_msg,
-                code=ErrorCode.POST_CHANGED,
+                code=InstagramErrorCode.POST_CHANGED,
                 data=InstagramData(url=url),
             )
             return self._last_result
@@ -500,7 +500,7 @@ class InstagramDownloader(AbstractServiceDownloader):
                 status="error",
                 context=error_msg,
                 data=InstagramData(url=url),
-                code=ErrorCode.PROFILE_NOT_EXISTS,
+                code=InstagramErrorCode.PROFILE_NOT_EXISTS,
             )
             return self._last_result
         
@@ -511,7 +511,7 @@ class InstagramDownloader(AbstractServiceDownloader):
                 status="error",
                 context=error_msg,
                 data=InstagramData(url=url),
-                code=ErrorCode.CONNECTION_ERROR,
+                code=InstagramErrorCode.CONNECTION_ERROR,
             )
             return self._last_result
         
@@ -521,7 +521,7 @@ class InstagramDownloader(AbstractServiceDownloader):
             self._last_result = InstagramResult(
                 status="error",
                 context=error_msg,
-                code=ErrorCode.BAD_RESPONSE,
+                code=InstagramErrorCode.BAD_RESPONSE,
                 data=InstagramData(url=url),
             )
             return self._last_result
@@ -533,11 +533,11 @@ class InstagramDownloader(AbstractServiceDownloader):
                 status="error",
                 context=error_msg,
                 data=InstagramData(url=url),
-                code=ErrorCode.UNEXPECTED_ERROR,
+                code=InstagramErrorCode.UNEXPECTED_ERROR,
             )
             return self._last_result
 
-    def get_error_description(self, code: ErrorCode) -> str:
+    def get_error_description(self, code: InstagramErrorCode) -> str:
         """
         Get human-readable description for error code.
         
@@ -548,23 +548,23 @@ class InstagramDownloader(AbstractServiceDownloader):
             Description string
         """
         descriptions = {
-            ErrorCode.SUCCESS: "Operation completed successfully",
-            ErrorCode.INVALID_URL: "The provided URL is invalid or not supported",
-            ErrorCode.INVALID_SHORTCODE: "Could not extract shortcode from URL",
-            ErrorCode.EMPTY_URL: "Empty or invalid URL provided",
-            ErrorCode.AUTHENTICATION_FAILED: "Instagram authentication failed",
-            ErrorCode.SESSION_LOAD_FAILED: "Failed to load session from file",
-            ErrorCode.SESSION_SAVE_FAILED: "Failed to save session to file",
-            ErrorCode.CONNECTION_ERROR: "Network connection error occurred",
-            ErrorCode.TIMEOUT_ERROR: "Request timeout exceeded",
-            ErrorCode.BAD_RESPONSE: "Received bad response from Instagram API",
-            ErrorCode.POST_NOT_FOUND: "The requested post was not found",
-            ErrorCode.POST_CHANGED: "The post has changed or is no longer available",
-            ErrorCode.PROFILE_NOT_EXISTS: "The requested profile does not exist",
-            ErrorCode.CONTENT_NOT_SUPPORTED: "The content type is not supported",
-            ErrorCode.EXTRACTION_ERROR: "Error occurred during content extraction",
-            ErrorCode.UNEXPECTED_ERROR: "An unexpected error occurred",
-            ErrorCode.INITIALIZATION_ERROR: "Failed to initialize downloader",
-            ErrorCode.DOWNLOAD_ERROR: "Error occurred during download",
+            InstagramErrorCode.SUCCESS: "Operation completed successfully",
+            InstagramErrorCode.INVALID_URL: "The provided URL is invalid or not supported",
+            InstagramErrorCode.INVALID_SHORTCODE: "Could not extract shortcode from URL",
+            InstagramErrorCode.EMPTY_URL: "Empty or invalid URL provided",
+            InstagramErrorCode.AUTHENTICATION_FAILED: "Instagram authentication failed",
+            InstagramErrorCode.SESSION_LOAD_FAILED: "Failed to load session from file",
+            InstagramErrorCode.SESSION_SAVE_FAILED: "Failed to save session to file",
+            InstagramErrorCode.CONNECTION_ERROR: "Network connection error occurred",
+            InstagramErrorCode.TIMEOUT_ERROR: "Request timeout exceeded",
+            InstagramErrorCode.BAD_RESPONSE: "Received bad response from Instagram API",
+            InstagramErrorCode.POST_NOT_FOUND: "The requested post was not found",
+            InstagramErrorCode.POST_CHANGED: "The post has changed or is no longer available",
+            InstagramErrorCode.PROFILE_NOT_EXISTS: "The requested profile does not exist",
+            InstagramErrorCode.CONTENT_NOT_SUPPORTED: "The content type is not supported",
+            InstagramErrorCode.EXTRACTION_ERROR: "Error occurred during content extraction",
+            InstagramErrorCode.UNEXPECTED_ERROR: "An unexpected error occurred",
+            InstagramErrorCode.INITIALIZATION_ERROR: "Failed to initialize downloader",
+            InstagramErrorCode.DOWNLOAD_ERROR: "Error occurred during download",
         }
         return descriptions.get(code, "Unknown error")

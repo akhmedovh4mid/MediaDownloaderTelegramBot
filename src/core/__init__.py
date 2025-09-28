@@ -1,5 +1,6 @@
 from .abstractions import (
     AbstractServiceDownloader,
+    AbstractServiceErrorCode,
     AbstractServiceResult,
     AbstractServiceVideo,
     AbstractServiceImage,
@@ -9,59 +10,60 @@ from .abstractions import (
 
 from .youtube import (
     YoutubeDownloader,
+    YoutubeErrorCode,
     YoutubeResult,
     YoutubeVideo,
     YoutubeImage,
     YoutubeAudio,
     YoutubeData,
-    ErrorCode as YoutubeErrorCode,
 )
 
 from .rutube import (
     RutubeDownloader,
+    RutubeErrorCode,
     RutubeResult,
     RutubeVideo,
     RutubeImage,
     RutubeAudio,
     RutubeData,
-    ErrorCode as RutubeErrorCode,
 )
 
 from .instagram import (
     InstagramDownloader,
+    InstagramErrorCode,
     InstagramResult,
     InstagramVideo,
     InstagramAudio,
     InstagramImage,
     InstagramData,
-    ErrorCode as InstagramErrorCode,
 )
 
 from .tiktok import (
     TikTokDownloader,
+    TikTokErrorCode,
     TikTokResult,
     TikTokVideo,
     TikTokAudio,
     TikTokImage,
     TikTokData,
-    ErrorCode as TikTokErrorCode,
     
 )
 
 from .reddit import (
     RedditDownloader,
+    RedditErrorCode,
     RedditResult,
     RedditVideo,
     RedditAudio,
     RedditImage,
     RedditData,
-    ErrorCode as RedditErrorCode,
 )
 
 
 __all__ = [
     # abstractions
     "AbstractServiceDownloader",
+    "AbstractServiceErrorCode",
     "AbstractServiceResult",
     "AbstractServiceVideo",
     "AbstractServiceAudio",

@@ -42,7 +42,7 @@ class ContentType(Enum):
     ACCOUNT = "account"
     
     
-class ErrorCode(Enum):
+class YoutubeErrorCode(Enum):
     """Enum representing error codes for YouTube operations."""
     
     # Success
@@ -111,13 +111,13 @@ class YoutubeAudio(AbstractServiceAudio):
 @dataclass
 class YoutubeResult(AbstractServiceResult):
     """Result of YouTube operations."""
-    code: ErrorCode = field(default=ErrorCode.SUCCESS)
+    code: YoutubeErrorCode = field(default=YoutubeErrorCode.SUCCESS)
 
 
 # ======= ExceptionClasses =======
 class ExtractInfoNotCalledError(Exception):
     """Exception raised when download is attempted before extract_info."""
-    def __init__(self, message: str, code: ErrorCode = ErrorCode.EXTRACT_INFO_NOT_CALLED):
+    def __init__(self, message: str, code: YoutubeErrorCode = YoutubeErrorCode.EXTRACT_INFO_NOT_CALLED):
         super().__init__(message)
         self.code = code
         self.message = message
@@ -125,7 +125,7 @@ class ExtractInfoNotCalledError(Exception):
 
 class CookieFileNotFoundError(FileNotFoundError):
     """Exception raised when cookie file is not found."""
-    def __init__(self, message: str, code: ErrorCode = ErrorCode.COOKIE_FILE_NOT_FOUND):
+    def __init__(self, message: str, code: YoutubeErrorCode = YoutubeErrorCode.COOKIE_FILE_NOT_FOUND):
         super().__init__(message)
         self.code = code
         self.message = message
@@ -133,7 +133,7 @@ class CookieFileNotFoundError(FileNotFoundError):
 
 class UnsupportedContentTypeError(Exception):
     """Exception raised for unsupported content types."""
-    def __init__(self, message: str, code: ErrorCode = ErrorCode.UNSUPPORTED_CONTENT_TYPE):
+    def __init__(self, message: str, code: YoutubeErrorCode = YoutubeErrorCode.UNSUPPORTED_CONTENT_TYPE):
         super().__init__(message)
         self.code = code
         self.message = message
@@ -172,7 +172,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
         if self.cookies_path and not self.cookies_path.exists():
             error_msg = f"Cookie file not found: {self.cookies_path}"
             logger.error(error_msg)
-            raise CookieFileNotFoundError(error_msg, ErrorCode.COOKIE_FILE_NOT_FOUND)
+            raise CookieFileNotFoundError(error_msg, YoutubeErrorCode.COOKIE_FILE_NOT_FOUND)
 
 
         try:
@@ -282,7 +282,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.EMPTY_URL,
+                code=YoutubeErrorCode.EMPTY_URL,
             )
             return self._last_result
             
@@ -293,7 +293,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.INVALID_URL,
+                code=YoutubeErrorCode.INVALID_URL,
             )
             return self._last_result
         
@@ -311,7 +311,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.UNSUPPORTED_CONTENT_TYPE,
+                code=YoutubeErrorCode.UNSUPPORTED_CONTENT_TYPE,
             )
             return self._last_result
 
@@ -322,7 +322,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.UNSUPPORTED_CONTENT_TYPE,
+                code=YoutubeErrorCode.UNSUPPORTED_CONTENT_TYPE,
             )
             return self._last_result
         
@@ -340,7 +340,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                     status="error",
                     data=self._data,
                     context=error_msg,
-                    code=ErrorCode.EXTRACTOR_ERROR,
+                    code=YoutubeErrorCode.EXTRACTOR_ERROR,
                 )
                 return self._last_result
             
@@ -351,7 +351,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                     status="error",
                     data=self._data,
                     context=error_msg,
-                    code=ErrorCode.DOWNLOAD_ERROR,
+                    code=YoutubeErrorCode.DOWNLOAD_ERROR,
                 )
                 return self._last_result
             
@@ -362,7 +362,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                     status="error",
                     data=self._data,
                     context=error_msg,
-                    code=ErrorCode.UNEXPECTED_ERROR,
+                    code=YoutubeErrorCode.UNEXPECTED_ERROR,
                 )
                 return self._last_result
             
@@ -374,7 +374,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.LIVE_STREAM_NOT_SUPPORTE,
+                code=YoutubeErrorCode.LIVE_STREAM_NOT_SUPPORTE,
             )
             return self._last_result
         
@@ -385,7 +385,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.PLAYLIST_NOT_SUPPORTED,
+                code=YoutubeErrorCode.PLAYLIST_NOT_SUPPORTED,
             )
             return self._last_result
         
@@ -396,7 +396,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.LIVE_STREAM_NOT_SUPPORTE,
+                code=YoutubeErrorCode.LIVE_STREAM_NOT_SUPPORTE,
             )
             return self._last_result
             
@@ -451,7 +451,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.NO_MEDIA_FORMATS_FOUND,
+                code=YoutubeErrorCode.NO_MEDIA_FORMATS_FOUND,
             )
             return self._last_result
         
@@ -557,7 +557,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
             return YoutubeResult(
                 status="error",
                 context=error_msg,
-                code=ErrorCode.DOWNLOAD_ERROR,
+                code=YoutubeErrorCode.DOWNLOAD_ERROR,
                 data=YoutubeData(url=url)
             )
         
@@ -567,11 +567,11 @@ class YoutubeDownloader(AbstractServiceDownloader):
             return YoutubeResult(
                 status="error",
                 context=error_msg,
-                code=ErrorCode.UNEXPECTED_ERROR,
+                code=YoutubeErrorCode.UNEXPECTED_ERROR,
                 data=YoutubeData(url=url)
             )
             
-    def get_error_description(self, code: ErrorCode) -> str:
+    def get_error_description(self, code: YoutubeErrorCode) -> str:
         """
         Get human-readable description for error code.
         
@@ -582,31 +582,31 @@ class YoutubeDownloader(AbstractServiceDownloader):
             Description string
         """
         descriptions = {
-            ErrorCode.SUCCESS: "Operation completed successfully",
-            ErrorCode.INVALID_URL: "The provided YouTube URL is invalid or not supported",
-            ErrorCode.EMPTY_URL: "Empty or invalid URL provided",
-            ErrorCode.UNSUPPORTED_CONTENT_TYPE: "The YouTube content type is not supported",
-            ErrorCode.UNSUPPORTED_MEDIA_TYPE: "The media type is not supported",
-            ErrorCode.CONNECTION_ERROR: "Network connection error occurred",
-            ErrorCode.DOWNLOAD_ERROR: "Media download failed",
-            ErrorCode.EXTRACTOR_ERROR: "Media extraction failed",
-            ErrorCode.PROXY_ERROR: "Proxy connection error",
-            ErrorCode.LIVE_STREAM_NOT_SUPPORTED: "Live streams are not supported",
-            ErrorCode.PLAYLIST_NOT_SUPPORTED: "Playlists are not supported",
-            ErrorCode.ACCOUNT_NOT_SUPPORTED: "Account/channel content is not supported",
-            ErrorCode.SHORTS_NOT_SUPPORTED: "YouTube Shorts are not supported",
-            ErrorCode.POST_NOT_SUPPORTED: "Community posts are not supported",
-            ErrorCode.NO_VIDEO_FORMATS_FOUND: "No supported video formats found",
-            ErrorCode.NO_AUDIO_FORMATS_FOUND: "No supported audio formats found",
-            ErrorCode.NO_THUMBNAILS_FOUND: "No thumbnails found",
-            ErrorCode.NO_MEDIA_FORMATS_FOUND: "No supported media formats found",
-            ErrorCode.COOKIE_FILE_NOT_FOUND: "Cookie file not found",
-            ErrorCode.OUTPUT_PATH_ERROR: "Output path error",
-            ErrorCode.FILE_WRITE_ERROR: "File write error",
-            ErrorCode.UNEXPECTED_ERROR: "An unexpected error occurred",
-            ErrorCode.INITIALIZATION_ERROR: "Failed to initialize downloader",
-            ErrorCode.EXTRACT_INFO_NOT_CALLED: "extract_info() must be called before download",
-            ErrorCode.YT_DLP_ERROR: "yt-dlp internal error occurred",
+            YoutubeErrorCode.SUCCESS: "Operation completed successfully",
+            YoutubeErrorCode.INVALID_URL: "The provided YouTube URL is invalid or not supported",
+            YoutubeErrorCode.EMPTY_URL: "Empty or invalid URL provided",
+            YoutubeErrorCode.UNSUPPORTED_CONTENT_TYPE: "The YouTube content type is not supported",
+            YoutubeErrorCode.UNSUPPORTED_MEDIA_TYPE: "The media type is not supported",
+            YoutubeErrorCode.CONNECTION_ERROR: "Network connection error occurred",
+            YoutubeErrorCode.DOWNLOAD_ERROR: "Media download failed",
+            YoutubeErrorCode.EXTRACTOR_ERROR: "Media extraction failed",
+            YoutubeErrorCode.PROXY_ERROR: "Proxy connection error",
+            YoutubeErrorCode.LIVE_STREAM_NOT_SUPPORTED: "Live streams are not supported",
+            YoutubeErrorCode.PLAYLIST_NOT_SUPPORTED: "Playlists are not supported",
+            YoutubeErrorCode.ACCOUNT_NOT_SUPPORTED: "Account/channel content is not supported",
+            YoutubeErrorCode.SHORTS_NOT_SUPPORTED: "YouTube Shorts are not supported",
+            YoutubeErrorCode.POST_NOT_SUPPORTED: "Community posts are not supported",
+            YoutubeErrorCode.NO_VIDEO_FORMATS_FOUND: "No supported video formats found",
+            YoutubeErrorCode.NO_AUDIO_FORMATS_FOUND: "No supported audio formats found",
+            YoutubeErrorCode.NO_THUMBNAILS_FOUND: "No thumbnails found",
+            YoutubeErrorCode.NO_MEDIA_FORMATS_FOUND: "No supported media formats found",
+            YoutubeErrorCode.COOKIE_FILE_NOT_FOUND: "Cookie file not found",
+            YoutubeErrorCode.OUTPUT_PATH_ERROR: "Output path error",
+            YoutubeErrorCode.FILE_WRITE_ERROR: "File write error",
+            YoutubeErrorCode.UNEXPECTED_ERROR: "An unexpected error occurred",
+            YoutubeErrorCode.INITIALIZATION_ERROR: "Failed to initialize downloader",
+            YoutubeErrorCode.EXTRACT_INFO_NOT_CALLED: "extract_info() must be called before download",
+            YoutubeErrorCode.YT_DLP_ERROR: "yt-dlp internal error occurred",
         }
         return descriptions.get(code, "Unknown error")
 

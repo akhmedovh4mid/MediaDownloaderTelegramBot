@@ -43,7 +43,7 @@ class ContentType(Enum):
     UNKNOWN = "unknown"
     
     
-class ErrorCode(Enum):
+class TikTokErrorCode(Enum):
     """Enum representing error codes for TikTok operations."""
     
     # Success
@@ -113,13 +113,13 @@ class TikTokAudio(AbstractServiceAudio):
 @dataclass
 class TikTokResult(AbstractServiceResult):
     """Result of TikTok operations."""
-    code: ErrorCode = field(default=ErrorCode.SUCCESS)
+    code: TikTokErrorCode = field(default=TikTokErrorCode.SUCCESS)
 
 
 # ======= ExceptionClasses =======
 class ExtractInfoNotCalledError(Exception):
     """Exception raised when download is attempted before extract_info."""
-    def __init__(self, message: str, code: ErrorCode = ErrorCode.EXTRACT_INFO_NOT_CALLED):
+    def __init__(self, message: str, code: TikTokErrorCode = TikTokErrorCode.EXTRACT_INFO_NOT_CALLED):
         super().__init__(message)
         self.code = code
         self.message = message
@@ -127,7 +127,7 @@ class ExtractInfoNotCalledError(Exception):
 
 class CookieFileNotFoundError(FileNotFoundError):
     """Exception raised when cookie file is not found."""
-    def __init__(self, message: str, code: ErrorCode = ErrorCode.COOKIE_FILE_NOT_FOUND):
+    def __init__(self, message: str, code: TikTokErrorCode = TikTokErrorCode.COOKIE_FILE_NOT_FOUND):
         super().__init__(message)
         self.code = code
         self.message = message
@@ -135,7 +135,7 @@ class CookieFileNotFoundError(FileNotFoundError):
 
 class UnsupportedContentTypeError(Exception):
     """Exception raised for unsupported content types."""
-    def __init__(self, message: str, code: ErrorCode = ErrorCode.UNSUPPORTED_CONTENT_TYPE):
+    def __init__(self, message: str, code: TikTokErrorCode = TikTokErrorCode.UNSUPPORTED_CONTENT_TYPE):
         super().__init__(message)
         self.code = code
         self.message = message
@@ -174,7 +174,7 @@ class TikTokDownloader(AbstractServiceDownloader):
         if self.cookies_path and not self.cookies_path.exists():
             error_msg = f"Cookie file not found: {self.cookies_path}"
             logger.error(error_msg)
-            raise CookieFileNotFoundError(error_msg, ErrorCode.COOKIE_FILE_NOT_FOUND)
+            raise CookieFileNotFoundError(error_msg, TikTokErrorCode.COOKIE_FILE_NOT_FOUND)
 
         try:
             self.ydl_opts: Dict[str, Optional[Union[bool, str, Path]]] = {
@@ -359,7 +359,7 @@ class TikTokDownloader(AbstractServiceDownloader):
                     status="error",
                     data=self._data,
                     context=error_msg,
-                    code=ErrorCode.EXTRACTOR_ERROR,
+                    code=TikTokErrorCode.EXTRACTOR_ERROR,
                 )
                 return self._last_result
             
@@ -370,7 +370,7 @@ class TikTokDownloader(AbstractServiceDownloader):
                     status="error",
                     data=self._data,
                     context=error_msg,
-                    code=ErrorCode.DOWNLOAD_ERROR,
+                    code=TikTokErrorCode.DOWNLOAD_ERROR,
                 )
                 return self._last_result
             
@@ -381,7 +381,7 @@ class TikTokDownloader(AbstractServiceDownloader):
                     status="error",
                     data=self._data,
                     context=error_msg,
-                    code=ErrorCode.UNEXPECTED_ERROR,
+                    code=TikTokErrorCode.UNEXPECTED_ERROR,
                 )
                 return self._last_result
 
@@ -419,7 +419,7 @@ class TikTokDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.NO_VIDEO_FORMATS_FOUND,
+                code=TikTokErrorCode.NO_VIDEO_FORMATS_FOUND,
             )
             return self._last_result
         
@@ -473,7 +473,7 @@ class TikTokDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.NO_IMAGES_FOUND,
+                code=TikTokErrorCode.NO_IMAGES_FOUND,
             )
             return self._last_result
                 
@@ -516,7 +516,7 @@ class TikTokDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.EMPTY_URL,
+                code=TikTokErrorCode.EMPTY_URL,
             )
             return self._last_result
         
@@ -527,7 +527,7 @@ class TikTokDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.INVALID_URL,
+                code=TikTokErrorCode.INVALID_URL,
             )
             return self._last_result
         
@@ -542,7 +542,7 @@ class TikTokDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.UNSUPPORTED_CONTENT_TYPE,
+                code=TikTokErrorCode.UNSUPPORTED_CONTENT_TYPE,
             )
             return self._last_result
             
@@ -555,7 +555,7 @@ class TikTokDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.NO_EXTRACTOR_FOUND,
+                code=TikTokErrorCode.NO_EXTRACTOR_FOUND,
             )
             return self._last_result
         
@@ -570,7 +570,7 @@ class TikTokDownloader(AbstractServiceDownloader):
                     status="error",
                     data=self._data,
                     context=error_msg,
-                    code=ErrorCode.NO_CONTENT_FOUND,
+                    code=TikTokErrorCode.NO_CONTENT_FOUND,
                 )
                 return self._last_result
             
@@ -584,7 +584,7 @@ class TikTokDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.METADATA_EXTRACTION_FAILE,
+                code=TikTokErrorCode.METADATA_EXTRACTION_FAILE,
             )
             return self._last_result
 
@@ -603,7 +603,7 @@ class TikTokDownloader(AbstractServiceDownloader):
             status="error",
             data=self._data,
             context=error_msg,
-            code=ErrorCode.UNSUPPORTED_CONTENT_TYPE,
+            code=TikTokErrorCode.UNSUPPORTED_CONTENT_TYPE,
         )
 
     def download_media(
@@ -661,7 +661,7 @@ class TikTokDownloader(AbstractServiceDownloader):
             return TikTokResult(
                 status="error",
                 context=error_msg,
-                code=ErrorCode.DOWNLOAD_ERROR,
+                code=TikTokErrorCode.DOWNLOAD_ERROR,
                 data=TikTokData(url=url)
             )
             
@@ -671,11 +671,11 @@ class TikTokDownloader(AbstractServiceDownloader):
             return TikTokResult(
                 status="error",
                 context=error_msg,
-                code=ErrorCode.UNEXPECTED_ERROR,
+                code=TikTokErrorCode.UNEXPECTED_ERROR,
                 data=TikTokData(url=url),
             )
             
-    def get_error_description(self, code: ErrorCode) -> str:
+    def get_error_description(self, code: TikTokErrorCode) -> str:
         """
         Get human-readable description for error code.
         
@@ -686,31 +686,31 @@ class TikTokDownloader(AbstractServiceDownloader):
             Description string
         """
         descriptions = {
-            ErrorCode.SUCCESS: "Operation completed successfully",
-            ErrorCode.INVALID_URL: "The provided TikTok URL is invalid or not supported",
-            ErrorCode.EMPTY_URL: "Empty or invalid URL provided",
-            ErrorCode.UNSUPPORTED_CONTENT_TYPE: "The TikTok content type is not supported",
-            ErrorCode.URL_RESOLUTION_FAILED: "Failed to resolve shortened TikTok URL",
-            ErrorCode.CONNECTION_ERROR: "Network connection error occurred",
-            ErrorCode.DOWNLOAD_ERROR: "Media download failed",
-            ErrorCode.EXTRACTOR_ERROR: "Media extraction failed",
-            ErrorCode.PROXY_ERROR: "Proxy connection error",
-            ErrorCode.NO_EXTRACTOR_FOUND: "No suitable extractor found for the URL",
-            ErrorCode.NO_CONTENT_FOUND: "No content found for the URL",
-            ErrorCode.METADATA_EXTRACTION_FAILED: "Failed to extract metadata",
-            ErrorCode.VIDEO_EXTRACTION_FAILED: "Video content extraction failed",
-            ErrorCode.PHOTO_EXTRACTION_FAILED: "Photo content extraction failed",
-            ErrorCode.MUSIC_EXTRACTION_FAILED: "Music extraction failed",
-            ErrorCode.NO_VIDEO_FORMATS_FOUND: "No supported video formats found",
-            ErrorCode.NO_IMAGES_FOUND: "No images found in photo post",
-            ErrorCode.NO_THUMBNAILS_FOUND: "No thumbnails found",
-            ErrorCode.COOKIE_FILE_NOT_FOUND: "Cookie file not found",
-            ErrorCode.OUTPUT_PATH_ERROR: "Output path error",
-            ErrorCode.FILE_WRITE_ERROR: "File write error",
-            ErrorCode.UNEXPECTED_ERROR: "An unexpected error occurred",
-            ErrorCode.INITIALIZATION_ERROR: "Failed to initialize downloader",
-            ErrorCode.EXTRACT_INFO_NOT_CALLED: "extract_info() must be called before download",
-            ErrorCode.GALLERY_DL_ERROR: "gallery-dl internal error occurred",
-            ErrorCode.YT_DLP_ERROR: "yt-dlp internal error occurred",
+            TikTokErrorCode.SUCCESS: "Operation completed successfully",
+            TikTokErrorCode.INVALID_URL: "The provided TikTok URL is invalid or not supported",
+            TikTokErrorCode.EMPTY_URL: "Empty or invalid URL provided",
+            TikTokErrorCode.UNSUPPORTED_CONTENT_TYPE: "The TikTok content type is not supported",
+            TikTokErrorCode.URL_RESOLUTION_FAILED: "Failed to resolve shortened TikTok URL",
+            TikTokErrorCode.CONNECTION_ERROR: "Network connection error occurred",
+            TikTokErrorCode.DOWNLOAD_ERROR: "Media download failed",
+            TikTokErrorCode.EXTRACTOR_ERROR: "Media extraction failed",
+            TikTokErrorCode.PROXY_ERROR: "Proxy connection error",
+            TikTokErrorCode.NO_EXTRACTOR_FOUND: "No suitable extractor found for the URL",
+            TikTokErrorCode.NO_CONTENT_FOUND: "No content found for the URL",
+            TikTokErrorCode.METADATA_EXTRACTION_FAILED: "Failed to extract metadata",
+            TikTokErrorCode.VIDEO_EXTRACTION_FAILED: "Video content extraction failed",
+            TikTokErrorCode.PHOTO_EXTRACTION_FAILED: "Photo content extraction failed",
+            TikTokErrorCode.MUSIC_EXTRACTION_FAILED: "Music extraction failed",
+            TikTokErrorCode.NO_VIDEO_FORMATS_FOUND: "No supported video formats found",
+            TikTokErrorCode.NO_IMAGES_FOUND: "No images found in photo post",
+            TikTokErrorCode.NO_THUMBNAILS_FOUND: "No thumbnails found",
+            TikTokErrorCode.COOKIE_FILE_NOT_FOUND: "Cookie file not found",
+            TikTokErrorCode.OUTPUT_PATH_ERROR: "Output path error",
+            TikTokErrorCode.FILE_WRITE_ERROR: "File write error",
+            TikTokErrorCode.UNEXPECTED_ERROR: "An unexpected error occurred",
+            TikTokErrorCode.INITIALIZATION_ERROR: "Failed to initialize downloader",
+            TikTokErrorCode.EXTRACT_INFO_NOT_CALLED: "extract_info() must be called before download",
+            TikTokErrorCode.GALLERY_DL_ERROR: "gallery-dl internal error occurred",
+            TikTokErrorCode.YT_DLP_ERROR: "yt-dlp internal error occurred",
         }
         return descriptions.get(code, "Unknown error")

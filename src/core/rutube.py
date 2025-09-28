@@ -41,7 +41,7 @@ class ContentType(Enum):
     PLAYLIST = "playlist"
     
 
-class ErrorCode(Enum):
+class RutubeErrorCode(Enum):
     """Enum representing error codes for Rutube operations."""
     
     # Success
@@ -106,13 +106,13 @@ class RutubeAudio(AbstractServiceAudio):
 @dataclass
 class RutubeResult(AbstractServiceResult):
     """Result of Rutube operations."""
-    code: ErrorCode = field(default=ErrorCode.SUCCESS)
+    code: RutubeErrorCode = field(default=RutubeErrorCode.SUCCESS)
 
 
 # ======= ExceptionClasses =======
 class ExtractInfoNotCalledError(Exception):
     """Exception raised when download is attempted before extract_info."""
-    def __init__(self, message: str, code: ErrorCode = ErrorCode.EXTRACT_INFO_NOT_CALLED):
+    def __init__(self, message: str, code: RutubeErrorCode = RutubeErrorCode.EXTRACT_INFO_NOT_CALLED):
         super().__init__(message)
         self.code = code
         self.message = message
@@ -120,7 +120,7 @@ class ExtractInfoNotCalledError(Exception):
 
 class CookieFileNotFoundError(FileNotFoundError):
     """Exception raised when cookie file is not found."""
-    def __init__(self, message: str, code: ErrorCode = ErrorCode.COOKIE_FILE_NOT_FOUND):
+    def __init__(self, message: str, code: RutubeErrorCode = RutubeErrorCode.COOKIE_FILE_NOT_FOUND):
         super().__init__(message)
         self.code = code
         self.message = message
@@ -128,7 +128,7 @@ class CookieFileNotFoundError(FileNotFoundError):
 
 class UnsupportedContentTypeError(Exception):
     """Exception raised for unsupported content types."""
-    def __init__(self, message: str, code: ErrorCode = ErrorCode.UNSUPPORTED_CONTENT_TYPE):
+    def __init__(self, message: str, code: RutubeErrorCode = RutubeErrorCode.UNSUPPORTED_CONTENT_TYPE):
         super().__init__(message)
         self.code = code
         self.message = message
@@ -167,7 +167,7 @@ class RutubeDownloader(AbstractServiceDownloader):
         if self.cookies_path and not self.cookies_path.exists():
             error_msg = f"Cookie file not found: {self.cookies_path}"
             logger.error(error_msg)
-            raise CookieFileNotFoundError(error_msg, ErrorCode.COOKIE_FILE_NOT_FOUND)
+            raise CookieFileNotFoundError(error_msg, RutubeErrorCode.COOKIE_FILE_NOT_FOUND)
         
         try:
             self.ydl_opts: Dict[str, Optional[Union[bool, str, Path]]] = {
@@ -277,7 +277,7 @@ class RutubeDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.EMPTY_URL,
+                code=RutubeErrorCode.EMPTY_URL,
             )
             return self._last_result
         
@@ -288,7 +288,7 @@ class RutubeDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.INVALID_URL,
+                code=RutubeErrorCode.INVALID_URL,
             )
             return self._last_result
         
@@ -306,7 +306,7 @@ class RutubeDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.UNSUPPORTED_CONTENT_TYPE,
+                code=RutubeErrorCode.UNSUPPORTED_CONTENT_TYPE,
             )
             return self._last_result
         
@@ -317,7 +317,7 @@ class RutubeDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.UNSUPPORTED_CONTENT_TYPE,
+                code=RutubeErrorCode.UNSUPPORTED_CONTENT_TYPE,
             )
             return self._last_result
            
@@ -335,7 +335,7 @@ class RutubeDownloader(AbstractServiceDownloader):
                     status="error",
                     data=self._data,
                     context=error_msg,
-                    code=ErrorCode.EXTRACTOR_ERROR,
+                    code=RutubeErrorCode.EXTRACTOR_ERROR,
                 )
                 return self._last_result
             
@@ -346,7 +346,7 @@ class RutubeDownloader(AbstractServiceDownloader):
                     status="error",
                     data=self._data,
                     context=error_msg,
-                    code=ErrorCode.DOWNLOAD_ERROR,
+                    code=RutubeErrorCode.DOWNLOAD_ERROR,
                 )
                 return self._last_result
 
@@ -357,7 +357,7 @@ class RutubeDownloader(AbstractServiceDownloader):
                     status="error",
                     data=self._data,
                     context=error_msg,
-                    code=ErrorCode.UNEXPECTED_ERROR,
+                    code=RutubeErrorCode.UNEXPECTED_ERROR,
                 )
                 return self._last_result
                 
@@ -369,7 +369,7 @@ class RutubeDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.PLAYLIST_NOT_SUPPORTED,
+                code=RutubeErrorCode.PLAYLIST_NOT_SUPPORTED,
             )
             return self._last_result
         
@@ -380,7 +380,7 @@ class RutubeDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.LIVE_STREAM_NOT_SUPPORTE,
+                code=RutubeErrorCode.LIVE_STREAM_NOT_SUPPORTE,
             )
             return self._last_result
         
@@ -391,7 +391,7 @@ class RutubeDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.LIVE_STREAM_NOT_SUPPORTE,
+                code=RutubeErrorCode.LIVE_STREAM_NOT_SUPPORTE,
             )
             return self._last_result
 
@@ -430,7 +430,7 @@ class RutubeDownloader(AbstractServiceDownloader):
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=ErrorCode.NO_VIDEO_FORMATS_FOUND,
+                code=RutubeErrorCode.NO_VIDEO_FORMATS_FOUND,
             )
             return self._last_result
                 
@@ -526,7 +526,7 @@ class RutubeDownloader(AbstractServiceDownloader):
             return RutubeResult(
                 status="error",
                 context=error_msg,
-                code=ErrorCode.DOWNLOAD_ERROR,
+                code=RutubeErrorCode.DOWNLOAD_ERROR,
                 data=RutubeData(url=url)
             )
             
@@ -536,11 +536,11 @@ class RutubeDownloader(AbstractServiceDownloader):
             return RutubeResult(
                 status="error",
                 context=error_msg,
-                code=ErrorCode.UNEXPECTED_ERROR,
+                code=RutubeErrorCode.UNEXPECTED_ERROR,
                 data=RutubeData(url=url)
             )
             
-    def get_error_description(self, code: ErrorCode) -> str:
+    def get_error_description(self, code: RutubeErrorCode) -> str:
         """
         Get human-readable description for error code.
         
@@ -551,27 +551,27 @@ class RutubeDownloader(AbstractServiceDownloader):
             Description string
         """
         descriptions = {
-            ErrorCode.SUCCESS: "Operation completed successfully",
-            ErrorCode.INVALID_URL: "The provided Rutube URL is invalid or not supported",
-            ErrorCode.EMPTY_URL: "Empty or invalid URL provided",
-            ErrorCode.UNSUPPORTED_CONTENT_TYPE: "The Rutube content type is not supported",
-            ErrorCode.UNSUPPORTED_MEDIA_TYPE: "The media type is not supported",
-            ErrorCode.CONNECTION_ERROR: "Network connection error occurred",
-            ErrorCode.DOWNLOAD_ERROR: "Media download failed",
-            ErrorCode.EXTRACTOR_ERROR: "Media extraction failed",
-            ErrorCode.PROXY_ERROR: "Proxy connection error",
-            ErrorCode.LIVE_STREAM_NOT_SUPPORTED: "Live streams are not supported",
-            ErrorCode.PLAYLIST_NOT_SUPPORTED: "Playlists are not supported",
-            ErrorCode.ACCOUNT_NOT_SUPPORTED: "Account/channel content is not supported",
-            ErrorCode.NO_VIDEO_FORMATS_FOUND: "No supported video formats found",
-            ErrorCode.NO_THUMBNAILS_FOUND: "No thumbnails found",
-            ErrorCode.COOKIE_FILE_NOT_FOUND: "Cookie file not found",
-            ErrorCode.OUTPUT_PATH_ERROR: "Output path error",
-            ErrorCode.FILE_WRITE_ERROR: "File write error",
-            ErrorCode.UNEXPECTED_ERROR: "An unexpected error occurred",
-            ErrorCode.INITIALIZATION_ERROR: "Failed to initialize downloader",
-            ErrorCode.EXTRACT_INFO_NOT_CALLED: "extract_info() must be called before download",
-            ErrorCode.YT_DLP_ERROR: "yt-dlp internal error occurred",
+            RutubeErrorCode.SUCCESS: "Operation completed successfully",
+            RutubeErrorCode.INVALID_URL: "The provided Rutube URL is invalid or not supported",
+            RutubeErrorCode.EMPTY_URL: "Empty or invalid URL provided",
+            RutubeErrorCode.UNSUPPORTED_CONTENT_TYPE: "The Rutube content type is not supported",
+            RutubeErrorCode.UNSUPPORTED_MEDIA_TYPE: "The media type is not supported",
+            RutubeErrorCode.CONNECTION_ERROR: "Network connection error occurred",
+            RutubeErrorCode.DOWNLOAD_ERROR: "Media download failed",
+            RutubeErrorCode.EXTRACTOR_ERROR: "Media extraction failed",
+            RutubeErrorCode.PROXY_ERROR: "Proxy connection error",
+            RutubeErrorCode.LIVE_STREAM_NOT_SUPPORTED: "Live streams are not supported",
+            RutubeErrorCode.PLAYLIST_NOT_SUPPORTED: "Playlists are not supported",
+            RutubeErrorCode.ACCOUNT_NOT_SUPPORTED: "Account/channel content is not supported",
+            RutubeErrorCode.NO_VIDEO_FORMATS_FOUND: "No supported video formats found",
+            RutubeErrorCode.NO_THUMBNAILS_FOUND: "No thumbnails found",
+            RutubeErrorCode.COOKIE_FILE_NOT_FOUND: "Cookie file not found",
+            RutubeErrorCode.OUTPUT_PATH_ERROR: "Output path error",
+            RutubeErrorCode.FILE_WRITE_ERROR: "File write error",
+            RutubeErrorCode.UNEXPECTED_ERROR: "An unexpected error occurred",
+            RutubeErrorCode.INITIALIZATION_ERROR: "Failed to initialize downloader",
+            RutubeErrorCode.EXTRACT_INFO_NOT_CALLED: "extract_info() must be called before download",
+            RutubeErrorCode.YT_DLP_ERROR: "yt-dlp internal error occurred",
         }
         return descriptions.get(code, "Unknown error")
 
