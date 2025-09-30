@@ -1,4 +1,9 @@
 from .abstractions import (
+    AbstractServiceResultTypeDict,
+    AbstractServiceAudioTypeDict,
+    AbstractServiceImageTypeDict,
+    AbstractServiceVideoTypeDict,
+    AbstractServiceDataTypeDict,
     AbstractServiceDownloader,
     AbstractServiceErrorCode,
     AbstractServiceResult,
@@ -62,6 +67,11 @@ from .reddit import (
 
 __all__ = [
     # abstractions
+    "AbstractServiceResultTypeDict",
+    "AbstractServiceAudioTypeDict",
+    "AbstractServiceImageTypeDict",
+    "AbstractServiceVideoTypeDict",
+    "AbstractServiceDataTypeDict",
     "AbstractServiceDownloader",
     "AbstractServiceErrorCode",
     "AbstractServiceResult",

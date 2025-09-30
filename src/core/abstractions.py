@@ -2,7 +2,17 @@ from enum import Enum
 from pathlib import Path
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, TypedDict, NotRequired
+
+
+# ======= Image =======
+class AbstractServiceImageTypeDict(TypedDict):
+    id: str
+    url: str
+    name: str
+    width: NotRequired[Optional[int]]
+    height: NotRequired[Optional[int]]
+    caption: NotRequired[Optional[str]]
 
 
 @dataclass
@@ -25,7 +35,7 @@ class AbstractServiceImage(ABC):
     height: Optional[int] = None
     caption: Optional[str] = None
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> AbstractServiceImageTypeDict:
         """
         Convert the image instance to a dictionary representation.
         
@@ -41,7 +51,22 @@ class AbstractServiceImage(ABC):
             "caption": self.caption
         }
     
-    
+
+# ======= Video ======= 
+class AbstractServiceVideoTypeDict(TypedDict):
+    id: str
+    url: str
+    name: str
+    fps: NotRequired[Optional[int]]
+    cover: NotRequired[Optional[str]]
+    width: NotRequired[Optional[int]]
+    height: NotRequired[Optional[int]]
+    caption: NotRequired[Optional[str]]
+    duration: NotRequired[Optional[int]]
+    thumbnail: NotRequired[Optional[str]]
+    total_bitrate: NotRequired[Optional[int]]
+
+
 @dataclass
 class AbstractServiceVideo(ABC):
     """
@@ -72,7 +97,7 @@ class AbstractServiceVideo(ABC):
     thumbnail: Optional[str] = None
     total_bitrate: Optional[int] = None
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> AbstractServiceVideoTypeDict:
         """
         Convert the video instance to a dictionary representation.
         
@@ -93,6 +118,18 @@ class AbstractServiceVideo(ABC):
             "total_bitrate": self.total_bitrate,
         }
     
+
+# ======= Audio =======
+class AbstractServiceAudioTypeDict(TypedDict):
+    id: str
+    url: str
+    name: str
+    cover: NotRequired[Optional[str]]
+    author: NotRequired[Optional[str]]
+    caption: NotRequired[Optional[str]]
+    duration: NotRequired[Optional[str]]
+    total_bitrate: NotRequired[Optional[int]]
+
 
 @dataclass
 class AbstractServiceAudio(ABC):
@@ -118,7 +155,7 @@ class AbstractServiceAudio(ABC):
     duration: Optional[str] = None
     total_bitrate: Optional[int] = None
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> AbstractServiceAudioTypeDict:
         """
         Convert the audio instance to a dictionary representation.
         
@@ -137,6 +174,19 @@ class AbstractServiceAudio(ABC):
         }
         
     
+# ======= Data =======
+class AbstractServiceDataTypeDict(TypedDict):
+    url: str
+    is_video: bool
+    is_image: bool
+    path: NotRequired[Optional[Path]]
+    title: NotRequired[Optional[str]]
+    description: NotRequired[Optional[str]]
+    videos: List[AbstractServiceVideoTypeDict]
+    images: List[AbstractServiceImageTypeDict]
+    audios: List[AbstractServiceAudioTypeDict]
+    thumbnails: List[AbstractServiceImageTypeDict]
+
 
 @dataclass
 class AbstractServiceData(ABC):
@@ -166,7 +216,7 @@ class AbstractServiceData(ABC):
     audios: List[AbstractServiceAudio] = field(default_factory=list)
     thumbnails: List[AbstractServiceImage] = field(default_factory=list)
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> AbstractServiceDataTypeDict:
         """
         Convert the data instance to a dictionary representation.
         
@@ -196,7 +246,15 @@ class AbstractServiceErrorCode(Enum):
     """
     SUCCESS = "SUCCESS"
     UNEXPECTED_ERROR = "UNEXPECTED_ERROR"
-    
+
+
+# ======= Result ======= 
+class AbstractServiceResultTypeDict(TypedDict):
+    status: Literal["success", "error"]
+    context: NotRequired[Optional[str]]
+    code: AbstractServiceErrorCode
+    data: NotRequired[Optional[AbstractServiceDataTypeDict]]
+
 
 @dataclass
 class AbstractServiceResult(ABC):
@@ -214,7 +272,7 @@ class AbstractServiceResult(ABC):
     code: AbstractServiceErrorCode = field(default=AbstractServiceErrorCode.SUCCESS)
     data: Optional[AbstractServiceData] = None
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> AbstractServiceResultTypeDict:
         """
         Convert the result instance to a dictionary representation.
         

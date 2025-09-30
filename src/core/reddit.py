@@ -391,6 +391,18 @@ class RedditDownloader(AbstractServiceDownloader):
     
     def _add_image_from_data(self, image_data: dict, base_name: str) -> None:
         """Add images from preview data."""
+        # Additional resolutions
+        for idx, resolution in enumerate(image_data.get("resolutions", [])):
+            self._data.images.append(
+                RedditImage(
+                    id=uuid4(),
+                    url=resolution["url"],
+                    name=f"{base_name}_res_{idx}",
+                    width=resolution["width"],
+                    height=resolution["height"],
+                )
+            )
+            
         # Main image (highest quality)
         if "source" in image_data:
             source = image_data["source"]
@@ -401,18 +413,6 @@ class RedditDownloader(AbstractServiceDownloader):
                     name=f"{base_name}_source",
                     width=source["width"],
                     height=source["height"],
-                )
-            )
-
-        # Additional resolutions
-        for idx, resolution in enumerate(image_data.get("resolutions", [])):
-            self._data.images.append(
-                RedditImage(
-                    id=uuid4(),
-                    url=resolution["url"],
-                    name=f"{base_name}_res_{idx}",
-                    width=resolution["width"],
-                    height=resolution["height"],
                 )
             )
     
