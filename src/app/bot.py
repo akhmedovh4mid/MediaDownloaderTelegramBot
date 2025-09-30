@@ -14,7 +14,6 @@ from aiogram.filters import CommandStart, Command
 from aiogram.client.telegram import TelegramAPIServer
 from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.aiohttp import AiohttpSession
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from .filters import URLFilter
 from .common import ServiceType
