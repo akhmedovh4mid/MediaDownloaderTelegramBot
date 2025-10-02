@@ -1,8 +1,8 @@
 """
-Rutube downloader module.
+Модуль загрузчика Rutube.
 
-This module provides functionality to download media content from Rutube,
-including videos and thumbnails.
+Этот модуль предоставляет функционал для загрузки медиа-контента с Rutube,
+включая видео и миниатюры.
 """
 
 import hashlib
@@ -27,13 +27,13 @@ from .abstractions import (
 )
 
 
-# Setup logging
+# Настройка логирования
 logger = logging.getLogger("rutube")
 
 
 # ======= EnumsClasses =======
 class ContentType(Enum):
-    """Enum representing different Rutube content types."""
+    """Перечисление, представляющее различные типы контента Rutube."""
     LIVE = "live"
     VIDEO = "video"
     SHORTS = "shorts"
@@ -42,36 +42,36 @@ class ContentType(Enum):
     
 
 class RutubeErrorCode(Enum):
-    """Enum representing error codes for Rutube operations."""
+    """Перечисление, представляющее коды ошибок для операций с Rutube."""
     
-    # Success
+    # Успех
     SUCCESS = "SUCCESS"
     
-    # Input validation errors (1xx)
+    # Ошибки проверки входных данных (1xx)
     INVALID_URL = "INVALID_URL"
     EMPTY_URL = "EMPTY_URL"
     UNSUPPORTED_CONTENT_TYPE = "UNSUPPORTED_CONTENT_TYPE"
     UNSUPPORTED_MEDIA_TYPE = "UNSUPPORTED_MEDIA_TYPE"
     
-    # Network errors (2xx)
+    # Сетевые ошибки (2xx)
     CONNECTION_ERROR = "CONNECTION_ERROR"
     DOWNLOAD_ERROR = "DOWNLOAD_ERROR"
     EXTRACTOR_ERROR = "EXTRACTOR_ERROR"
     PROXY_ERROR = "PROXY_ERROR"
     
-    # Content errors (3xx)
+    # Ошибки контента (3xx)
     LIVE_STREAM_NOT_SUPPORTED = "LIVE_STREAM_NOT_SUPPORTED"
     PLAYLIST_NOT_SUPPORTED = "PLAYLIST_NOT_SUPPORTED"
     ACCOUNT_NOT_SUPPORTED = "ACCOUNT_NOT_SUPPORTED"
-    NO_VIDEO_FORMATS_FOUND = "NO_VIDEO_FORMATS_FOUND"
+    NO_MEDIA_FORMATS_FOUND = "NO_MEDIA_FORMATS_FOUND"
     NO_THUMBNAILS_FOUND = "NO_THUMBNAILS_FOUND"
     
-    # File system errors (4xx)
+    # Ошибки файловой системы (4xx)
     COOKIE_FILE_NOT_FOUND = "COOKIE_FILE_NOT_FOUND"
     OUTPUT_PATH_ERROR = "OUTPUT_PATH_ERROR"
     FILE_WRITE_ERROR = "FILE_WRITE_ERROR"
     
-    # System errors (5xx)
+    # Системные ошибки (5xx)
     UNEXPECTED_ERROR = "UNEXPECTED_ERROR"
     INITIALIZATION_ERROR = "INITIALIZATION_ERROR"
     EXTRACT_INFO_NOT_CALLED = "EXTRACT_INFO_NOT_CALLED"
@@ -81,37 +81,37 @@ class RutubeErrorCode(Enum):
 # ======= DataClasses =======
 @dataclass
 class RutubeData(AbstractServiceData):
-    """Container for Rutube media data."""
+    """Контейнер для данных медиа с Rutube."""
     pass
 
 
 @dataclass
 class RutubeImage(AbstractServiceImage):
-    """Represents a Rutube thumbnail image."""
+    """Представляет миниатюру изображения Rutube."""
     pass
 
 
 @dataclass
 class RutubeVideo(AbstractServiceVideo):
-    """Represents a Rutube video format."""
+    """Представляет видео формат Rutube."""
     pass
 
 
 @dataclass
 class RutubeAudio(AbstractServiceAudio):
-    """Represents a Rutube audio format."""
+    """Представляет аудио формат Rutube."""
     pass
 
 
 @dataclass
 class RutubeResult(AbstractServiceResult):
-    """Result of Rutube operations."""
+    """Результат операций с Rutube."""
     code: RutubeErrorCode = field(default=RutubeErrorCode.SUCCESS)
 
 
 # ======= ExceptionClasses =======
 class ExtractInfoNotCalledError(Exception):
-    """Exception raised when download is attempted before extract_info."""
+    """Исключение при попытке загрузки до вызова extract_info."""
     def __init__(self, message: str, code: RutubeErrorCode = RutubeErrorCode.EXTRACT_INFO_NOT_CALLED):
         super().__init__(message)
         self.code = code
@@ -119,7 +119,7 @@ class ExtractInfoNotCalledError(Exception):
 
 
 class CookieFileNotFoundError(FileNotFoundError):
-    """Exception raised when cookie file is not found."""
+    """Исключение при отсутствии файла cookie."""
     def __init__(self, message: str, code: RutubeErrorCode = RutubeErrorCode.COOKIE_FILE_NOT_FOUND):
         super().__init__(message)
         self.code = code
@@ -127,7 +127,7 @@ class CookieFileNotFoundError(FileNotFoundError):
 
 
 class UnsupportedContentTypeError(Exception):
-    """Exception raised for unsupported content types."""
+    """Исключение для неподдерживаемых типов контента."""
     def __init__(self, message: str, code: RutubeErrorCode = RutubeErrorCode.UNSUPPORTED_CONTENT_TYPE):
         super().__init__(message)
         self.code = code
@@ -137,10 +137,10 @@ class UnsupportedContentTypeError(Exception):
 # ======= MainClass =======
 class RutubeDownloader(AbstractServiceDownloader):
     """
-    Rutube media downloader.
+    Загрузчик медиа-контента с Rutube.
     
-    Supports downloading videos and thumbnails from Rutube.
-    Handles various content types including shorts and regular videos.
+    Поддерживает загрузку видео и миниатюр с Rutube.
+    Обрабатывает различные типы контента, включая shorts и обычные видео.
     """
     
     def __init__(
@@ -151,21 +151,21 @@ class RutubeDownloader(AbstractServiceDownloader):
         concurrent_download_count: int = 2,
     ) -> None:
         """
-        Initialize Rutube downloader.
+        Инициализация загрузчика Rutube.
         
         Args:
-            retries_count: Number of retry attempts for downloads
-            proxy: Proxy server URL (optional)
-            cookie_path: Path to cookies file (optional)
-            concurrent_download_count: Number of concurrent fragment downloads
+            retries_count: Количество попыток повтора для загрузок
+            proxy: URL прокси-сервера (опционально)
+            cookie_path: Путь к файлу cookies (опционально)
+            concurrent_download_count: Количество одновременных загрузок фрагментов
         """
-        logger.info("Initializing Rutube downloader")
+        logger.info("Инициализация загрузчика Rutube")
         
         self.proxy = proxy
         self.cookies_path = Path(cookie_path) if cookie_path else None
 
         if self.cookies_path and not self.cookies_path.exists():
-            error_msg = f"Cookie file not found: {self.cookies_path}"
+            error_msg = f"Файл cookie не найден: {self.cookies_path}"
             logger.error(error_msg)
             raise CookieFileNotFoundError(error_msg, RutubeErrorCode.COOKIE_FILE_NOT_FOUND)
         
@@ -194,24 +194,24 @@ class RutubeDownloader(AbstractServiceDownloader):
             self._data: Optional[RutubeData] = None
             self._last_result: Optional[RutubeResult] = None
             
-            logger.debug("Rutube downloader initialized successfully")
+            logger.debug("Загрузчик Rutube успешно инициализирован")
             
         except Exception as e:
-            error_msg = f"Failed to initialize Rutube downloader: {e}"
+            error_msg = f"Ошибка инициализации загрузчика Rutube: {e}"
             logger.error(error_msg)
             raise Exception(error_msg) from e
         
     def _classify_url(self, url: str) -> Optional[ContentType]:
         """
-        Classify Rutube URL content type.
+        Классификация типа контента URL Rutube.
         
         Args:
-            url: Rutube URL to classify
+            url: URL Rutube для классификации
             
         Returns:
-            ContentType or None if classification fails
+            ContentType или None если классификация не удалась
         """
-        logger.debug(f"Classifying URL: {url}")
+        logger.debug(f"Классификация URL: {url}")
         
         try:
             parsed = urlparse(url=url)
@@ -219,7 +219,7 @@ class RutubeDownloader(AbstractServiceDownloader):
             path_parts = path.strip("/").split("/")
             
             if len(path_parts) < 2:
-                logger.warning(f"Invalid URL path: {path}")
+                logger.warning(f"Невалидный путь URL: {path}")
                 return None
             
             if "/channel/" in path:
@@ -233,45 +233,45 @@ class RutubeDownloader(AbstractServiceDownloader):
             else:
                 result = ContentType.VIDEO
                 
-            logger.debug(f"URL classified as: {result.value if result else 'unknown'}")
+            logger.debug(f"URL классифицирован как: {result.value if result else 'unknown'}")
             return result
         
         except Exception as e:
-            logger.error(f"URL classification error: {e}")
+            logger.error(f"Ошибка классификации URL: {e}")
             return None
         
     def _validate_rutube_url(self, url: str) -> bool:
         """
-        Validate Rutube URL.
+        Проверка валидности URL Rutube.
         
         Args:
-            url: URL to validate
+            url: URL для проверки
             
         Returns:
-            True if URL is valid Rutube URL
+            True если URL является валидным URL Rutube
         """
         try:
             parsed = urlparse(url)
             return parsed.netloc.endswith("rutube.ru")
         except Exception as e:
-            logger.debug(f"URL validation error: {e}")
+            logger.debug(f"Ошибка проверки URL: {e}")
             return False
         
     def extract_info(self, url: str) -> RutubeResult:
         """
-        Extract media information from Rutube URL.
+        Извлечение информации о медиа из URL Rutube.
         
         Args:
-            url: Rutube URL to extract information from
+            url: URL Rutube для извлечения информации
             
         Returns:
-            RutubeResult: Result containing extracted media data
+            RutubeResult: Результат, содержащий извлеченные данные медиа
         """
-        logger.info(f"Extracting info from URL: {url}")
+        logger.info(f"Извлечение информации из URL: {url}")
         
-        # Validate URL
+        # Проверка URL
         if not url or not isinstance(url, str):
-            error_msg = "Invalid URL provided"
+            error_msg = "Предоставлен невалидный URL"
             logger.error(error_msg)
             self._last_result = RutubeResult(
                 status="error",
@@ -282,7 +282,7 @@ class RutubeDownloader(AbstractServiceDownloader):
             return self._last_result
         
         if not self._validate_rutube_url(url):
-            error_msg = "Invalid or unsupported Rutube URL"
+            error_msg = "Невалидный или неподдерживаемый URL Rutube"
             logger.error(error_msg)
             self._last_result = RutubeResult(
                 status="error",
@@ -297,10 +297,10 @@ class RutubeDownloader(AbstractServiceDownloader):
         
         self._data = RutubeData(url=url) 
         
-        # Classify content type
+        # Классификация типа контента
         content_type = self._classify_url(url=url)
         if not content_type:
-            error_msg = "Could not classify URL content type"
+            error_msg = "Не удалось классифицировать тип контента URL"
             logger.error(error_msg)
             self._last_result = RutubeResult(
                 status="error",
@@ -311,7 +311,7 @@ class RutubeDownloader(AbstractServiceDownloader):
             return self._last_result
         
         if content_type in self.unsupported_types:
-            error_msg = f"Unsupported content type: {content_type.value}"
+            error_msg = f"Неподдерживаемый тип контента: {content_type.value}"
             logger.warning(error_msg)
             self._last_result = RutubeResult(
                 status="error",
@@ -321,15 +321,15 @@ class RutubeDownloader(AbstractServiceDownloader):
             )
             return self._last_result
            
-        # Extract information using yt-dlp
+        # Извлечение информации с использованием yt-dlp
         with YoutubeDL(params=ydl_opts) as ydl:
             try:
-                logger.debug("Starting info extraction with yt-dlp")
+                logger.debug("Начало извлечения информации с yt-dlp")
                 data = ydl.extract_info(url=url, download=False)
-                logger.debug("Info extraction completed successfully")
+                logger.debug("Извлечение информации успешно завершено")
 
             except ExtractorError as e:
-                error_msg = f"Extraction error: {str(e)}"
+                error_msg = f"Ошибка извлечения: {str(e)}"
                 logger.error(error_msg)
                 self._last_result = RutubeResult(
                     status="error",
@@ -340,7 +340,7 @@ class RutubeDownloader(AbstractServiceDownloader):
                 return self._last_result
             
             except DownloadError as e:
-                error_msg = f"Download error during extraction: {str(e)}"
+                error_msg = f"Ошибка загрузки при извлечении: {str(e)}"
                 logger.error(error_msg)
                 self._last_result = RutubeResult(
                     status="error",
@@ -351,7 +351,7 @@ class RutubeDownloader(AbstractServiceDownloader):
                 return self._last_result
 
             except Exception as e:
-                error_msg = f"Unexpected error during extraction: {str(e)}"
+                error_msg = f"Неожиданная ошибка при извлечении: {str(e)}"
                 logger.error(error_msg)
                 self._last_result = RutubeResult(
                     status="error",
@@ -361,9 +361,9 @@ class RutubeDownloader(AbstractServiceDownloader):
                 )
                 return self._last_result
                 
-        # Check for unsupported content types in extracted data
+        # Проверка неподдерживаемых типов контента в извлеченных данных
         if data.get("_type") == "playlist":
-            error_msg = "Playlists are not supported"
+            error_msg = "Плейлисты не поддерживаются"
             logger.warning(error_msg)
             self._last_result = RutubeResult(
                 status="error",
@@ -374,39 +374,38 @@ class RutubeDownloader(AbstractServiceDownloader):
             return self._last_result
         
         if data.get("is_live") == True:
-            error_msg = "Live streams are not supported"
+            error_msg = "Прямые трансляции не поддерживаются"
             logger.warning(error_msg)
             self._last_result = RutubeResult(
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=RutubeErrorCode.LIVE_STREAM_NOT_SUPPORTE,
+                code=RutubeErrorCode.LIVE_STREAM_NOT_SUPPORTED,
             )
             return self._last_result
         
         if data.get("media_type") == "livestream":
-            error_msg = "Livestreams are not supported"
+            error_msg = "Прямые эфиры не поддерживаются"
             logger.warning(error_msg)
             self._last_result = RutubeResult(
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=RutubeErrorCode.LIVE_STREAM_NOT_SUPPORTE,
+                code=RutubeErrorCode.LIVE_STREAM_NOT_SUPPORTED,
             )
             return self._last_result
 
-        # Populate data object
+        # Заполнение объекта данных
         self._data.is_video = True
         self._data.title = data.get("title")
+        self._data.author_name = data.get("uploader")
         self._data.description = data.get("description")
-
-        # Extract video formats
-        video_count = 0
+        
+        # Извлечение видео форматов
         for format in data.get("formats", []):
             if (
-                format.get("ext") == "mp4" 
-                and format.get("vcodec", "").startswith("avc1")
-                and format.get("acodec", "").startswith("mp4a")
+                format["ext"] == "mp4"
+                and format["vcodec"] == "h264"
             ):
                 self._data.videos.append(
                     RutubeVideo(
@@ -416,32 +415,81 @@ class RutubeDownloader(AbstractServiceDownloader):
                         fps=format.get("fps"),
                         width=format.get("width"),
                         height=format.get("height"),
-                        caption=format.get("format"),
-                        duration=data.get("duration"),
                         total_bitrate=format.get("tbr"),
                     )
                 )
                 video_count += 1
                 
-        if video_count == 0:
-            error_msg = "No supported video formats found"
+            elif (
+                format.get("ext") == "mp4" 
+                and format.get("vcodec", "").startswith("avc1")
+            ):
+                self._data.videos.append(
+                    RutubeVideo(
+                        id=uuid4(),
+                        url=format["url"],
+                        name=format["format_id"],
+                        fps=format.get("fps"),
+                        width=format.get("width"),
+                        height=format.get("height"),
+                        total_bitrate=format.get("tbr"),
+                    )
+                )
+                video_count += 1
+                
+            elif (
+                format.get("ext") == "m4a"
+                and format.get("vcodec") == "none"
+                and format.get("acodec").startswith("mp4a")
+            ):
+                self._data.audios.append(
+                    RutubeAudio(
+                        id=uuid4(),
+                        url=format["url"],
+                        name=format["format_id"],
+                    )
+                )
+                audio_count += 1
+                
+            elif (
+                format.get("ext") == "m4a"
+                and format.get("vcodec") == "none"
+                and format.get("acodec").startswith("aac")
+            ):
+                self._data.audios.append(
+                    RutubeAudio(
+                        id=uuid4(),
+                        url=format["url"],
+                        name=format["format_id"],
+                    )
+                )
+                audio_count += 1
+                
+        if audio_count == 0 and video_count == 0:
+            error_msg = "Не найдено поддерживаемых медиа форматов"
             logger.warning(error_msg)
             self._last_result = RutubeResult(
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=RutubeErrorCode.NO_VIDEO_FORMATS_FOUND,
+                code=RutubeErrorCode.NO_MEDIA_FORMATS_FOUND,
             )
             return self._last_result
+        
+        if video_count == 0:
+            logger.warning("Не найдено видео форматов")
+            
+        if audio_count == 0:
+            logger.warning("Не найдено аудио форматов")
                 
-        # Extract thumbnails
+        # Извлечение миниатюр
         thumbnail_count = 0
-        for thumbnail in data.get("thumbnails", []):  
+        for idx, thumbnail in enumerate(data.get("thumbnails", [])):  
             self._data.thumbnails.append(
                 RutubeImage(
                     id=uuid4(),
                     url=thumbnail["url"],
-                    name=thumbnail["id"],
+                    name=f"Image_{idx}",
                     width=thumbnail.get("width"),
                     height=thumbnail.get("height"),
                 )
@@ -449,23 +497,23 @@ class RutubeDownloader(AbstractServiceDownloader):
             thumbnail_count += 1
             
         if thumbnail_count == 0:
-            logger.warning("No thumbnails found for the video")
+            logger.warning("Для видео не найдено миниатюр")
         
-        logger.info(f"Extracted {video_count} video formats, {thumbnail_count} thumbnails")
+        logger.info(f"Извлечено {video_count} видео форматов, {audio_count} аудио форматов, {thumbnail_count} миниатюр")
         
         self._last_result = RutubeResult(data=self._data)
         return self._last_result
     
     def _generate_safe_filename(self, url: str, video_format_id: str) -> str:
         """
-        Generate safe filename based on URL hash.
+        Генерация безопасного имени файла на основе хеша URL.
         
         Args:
-            url: Content URL
-            video_format_id: Video format ID
+            url: URL контента
+            video_format_id: ID видео формата
             
         Returns:
-            Safe filename string
+            Строка с безопасным именем файла
         """
         hash_input = f"rutube_{url}_{video_format_id}"
         file_hash = hashlib.sha256(hash_input.encode()).hexdigest()[:16]
@@ -478,33 +526,33 @@ class RutubeDownloader(AbstractServiceDownloader):
         output_path: str = "./downloads/rutube/"
     ) -> RutubeResult:
         """
-        Download media using previously extracted information.
+        Загрузка медиа с использованием ранее извлеченной информации.
         
         Args:
-            url: URL of the Rutube video to download
-            video_format_id: ID of the video format to download
-            output_path: Directory path for saving the downloaded file
+            url: URL видео Rutube для загрузки
+            video_format_id: ID видео формата для загрузки
+            output_path: Путь к директории для сохранения загруженного файла
             
         Returns:
-            RutubeResult: Result of the download operation
+            RutubeResult: Результат операции загрузки
             
         Raises:
-            ExtractInfoNotCalledError: If extract_info wasn't called first
+            ExtractInfoNotCalledError: Если extract_info не был вызван первым
         """
-        logger.info(f"Starting media download: url={url}, format={video_format_id}")
+        logger.info(f"Начало загрузки медиа: url={url}, format={video_format_id}")
          
-        # Prepare output directory
+        # Подготовка выходной директории
         output_dir = Path(output_path)
         output_dir.mkdir(parents=True, exist_ok=True)
         
-        # Generate safe filename
+        # Генерация безопасного имени файла
         safe_filename = self._generate_safe_filename(
             url=url,
             video_format_id=video_format_id
         )
         file_path = output_dir / f"{safe_filename}.mp4"
         
-        # Configure download options
+        # Настройка параметров загрузки
         ydl_opts = self.ydl_opts.copy()
         ydl_opts.update({
             "outtmpl": str(file_path),
@@ -513,15 +561,15 @@ class RutubeDownloader(AbstractServiceDownloader):
         })
         
         try:
-            logger.debug(f"Downloading to: {file_path}")
+            logger.debug(f"Загрузка в: {file_path}")
             with YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
                 
-            logger.info(f"Download completed successfully: {file_path}")
+            logger.info(f"Загрузка успешно завершена: {file_path}")
             return RutubeResult(data=RutubeData(url=url, path=file_path, is_video=True))
         
         except DownloadError as e:
-            error_msg = f"Download error: {e}"
+            error_msg = f"Ошибка загрузки: {e}"
             logger.error(error_msg)
             return RutubeResult(
                 status="error",
@@ -531,7 +579,7 @@ class RutubeDownloader(AbstractServiceDownloader):
             )
             
         except Exception as e:
-            error_msg = f"Unexpected download error: {e}"
+            error_msg = f"Неожиданная ошибка загрузки: {e}"
             logger.error(error_msg)
             return RutubeResult(
                 status="error",
@@ -542,37 +590,37 @@ class RutubeDownloader(AbstractServiceDownloader):
             
     def get_error_description(self, code: RutubeErrorCode) -> str:
         """
-        Get human-readable description for error code.
+        Получение человеко-читаемого описания для кода ошибки.
         
         Args:
-            code: Error code enum value
+            code: Значение перечисления кода ошибки
             
         Returns:
-            Description string
+            Строка с описанием
         """
         descriptions = {
-            RutubeErrorCode.SUCCESS: "Operation completed successfully",
-            RutubeErrorCode.INVALID_URL: "The provided Rutube URL is invalid or not supported",
-            RutubeErrorCode.EMPTY_URL: "Empty or invalid URL provided",
-            RutubeErrorCode.UNSUPPORTED_CONTENT_TYPE: "The Rutube content type is not supported",
-            RutubeErrorCode.UNSUPPORTED_MEDIA_TYPE: "The media type is not supported",
-            RutubeErrorCode.CONNECTION_ERROR: "Network connection error occurred",
-            RutubeErrorCode.DOWNLOAD_ERROR: "Media download failed",
-            RutubeErrorCode.EXTRACTOR_ERROR: "Media extraction failed",
-            RutubeErrorCode.PROXY_ERROR: "Proxy connection error",
-            RutubeErrorCode.LIVE_STREAM_NOT_SUPPORTED: "Live streams are not supported",
-            RutubeErrorCode.PLAYLIST_NOT_SUPPORTED: "Playlists are not supported",
-            RutubeErrorCode.ACCOUNT_NOT_SUPPORTED: "Account/channel content is not supported",
-            RutubeErrorCode.NO_VIDEO_FORMATS_FOUND: "No supported video formats found",
-            RutubeErrorCode.NO_THUMBNAILS_FOUND: "No thumbnails found",
-            RutubeErrorCode.COOKIE_FILE_NOT_FOUND: "Cookie file not found",
-            RutubeErrorCode.OUTPUT_PATH_ERROR: "Output path error",
-            RutubeErrorCode.FILE_WRITE_ERROR: "File write error",
-            RutubeErrorCode.UNEXPECTED_ERROR: "An unexpected error occurred",
-            RutubeErrorCode.INITIALIZATION_ERROR: "Failed to initialize downloader",
-            RutubeErrorCode.EXTRACT_INFO_NOT_CALLED: "extract_info() must be called before download",
-            RutubeErrorCode.YT_DLP_ERROR: "yt-dlp internal error occurred",
+            RutubeErrorCode.SUCCESS: "Операция успешно завершена",
+            RutubeErrorCode.INVALID_URL: "Предоставленный URL Rutube невалиден или не поддерживается",
+            RutubeErrorCode.EMPTY_URL: "Предоставлен пустой или невалидный URL",
+            RutubeErrorCode.UNSUPPORTED_CONTENT_TYPE: "Тип контента Rutube не поддерживается",
+            RutubeErrorCode.UNSUPPORTED_MEDIA_TYPE: "Тип медиа не поддерживается",
+            RutubeErrorCode.CONNECTION_ERROR: "Произошла ошибка сетевого соединения",
+            RutubeErrorCode.DOWNLOAD_ERROR: "Ошибка загрузки медиа",
+            RutubeErrorCode.EXTRACTOR_ERROR: "Ошибка извлечения медиа",
+            RutubeErrorCode.PROXY_ERROR: "Ошибка подключения к прокси",
+            RutubeErrorCode.LIVE_STREAM_NOT_SUPPORTED: "Прямые трансляции не поддерживаются",
+            RutubeErrorCode.PLAYLIST_NOT_SUPPORTED: "Плейлисты не поддерживаются",
+            RutubeErrorCode.ACCOUNT_NOT_SUPPORTED: "Контент аккаунта/канала не поддерживается",
+            RutubeErrorCode.NO_MEDIA_FORMATS_FOUND: "Не найдено поддерживаемых медиа форматов",
+            RutubeErrorCode.NO_THUMBNAILS_FOUND: "Миниатюры не найдены",
+            RutubeErrorCode.COOKIE_FILE_NOT_FOUND: "Файл cookie не найден",
+            RutubeErrorCode.OUTPUT_PATH_ERROR: "Ошибка пути вывода",
+            RutubeErrorCode.FILE_WRITE_ERROR: "Ошибка записи файла",
+            RutubeErrorCode.UNEXPECTED_ERROR: "Произошла непредвиденная ошибка",
+            RutubeErrorCode.INITIALIZATION_ERROR: "Ошибка инициализации загрузчика",
+            RutubeErrorCode.EXTRACT_INFO_NOT_CALLED: "extract_info() должен быть вызван перед загрузкой",
+            RutubeErrorCode.YT_DLP_ERROR: "Произошла внутренняя ошибка yt-dlp",
         }
-        return descriptions.get(code, "Unknown error")
+        return descriptions.get(code, "Неизвестная ошибка")
 
         

@@ -1,8 +1,8 @@
 """
-Reddit downloader module.
+Модуль загрузчика Reddit.
 
-This module provides functionality to download media content from Reddit,
-including image galleries, video posts, and single images.
+Этот модуль предоставляет функционал для загрузки медиа-контента с Reddit,
+включая галереи изображений, видео-посты и отдельные изображения.
 """
 
 import os
@@ -30,42 +30,43 @@ from .abstractions import (
 )
 
 
-# Setup logging
+# Настройка логирования
 logger = logging.getLogger("reddit")
 
 
 # ======= EnumsClasses =======
 class ContentType(Enum):
-        """Enum representing different Reddit content types."""
-        VIDEO = "video"
-        IMAGE = "image"
-        GALLERY = "gallery"
-        UNSUPPORTED = "unsupported"
+    """Перечисление типов контента Reddit."""
+    LINK = "link"
+    VIDEO = "video"
+    IMAGE = "image"
+    GALLERY = "gallery"
+    UNSUPPORTED = "unsupported"
         
 
 class RedditErrorCode(Enum):
-    """Enum representing error codes for Reddit operations."""
+    """Коды ошибок для операций с Reddit."""
     
-    # Success
+    # Успех
     SUCCESS = "SUCCESS"
     
-    # Input validation errors (1xx)
+    # Ошибки проверки входных данных (1xx)
     INVALID_URL = "INVALID_URL"
     EMPTY_URL = "EMPTY_URL"
     UNSUPPORTED_CONTENT = "UNSUPPORTED_CONTENT"
     
-    # Authentication/API errors (2xx)
+    # Ошибки аутентификации/API (2xx)
     AUTHENTICATION_FAILED = "AUTHENTICATION_FAILED"
     API_ERROR = "API_ERROR"
     RATELIMIT_EXCEEDED = "RATELIMIT_EXCEEDED"
     
-    # Network errors (3xx)
+    # Сетевые ошибки (3xx)
     CONNECTION_ERROR = "CONNECTION_ERROR"
     DOWNLOAD_ERROR = "DOWNLOAD_ERROR"
     EXTRACTOR_ERROR = "EXTRACTOR_ERROR"
     PROXY_ERROR = "PROXY_ERROR"
     
-    # Content errors (4xx)
+    # Ошибки контента (4xx)
     GALLERY_DATA_MISSING = "GALLERY_DATA_MISSING"
     GALLERY_EMPTY = "GALLERY_EMPTY"
     VIDEO_EXTRACTION_FAILED = "VIDEO_EXTRACTION_FAILED"
@@ -73,12 +74,12 @@ class RedditErrorCode(Enum):
     MEDIA_METADATA_MISSING = "MEDIA_METADATA_MISSING"
     PREVIEW_DATA_MISSING = "PREVIEW_DATA_MISSING"
     
-    # File system errors (5xx)
+    # Ошибки файловой системы (5xx)
     COOKIE_FILE_NOT_FOUND = "COOKIE_FILE_NOT_FOUND"
     OUTPUT_PATH_ERROR = "OUTPUT_PATH_ERROR"
     FILE_WRITE_ERROR = "FILE_WRITE_ERROR"
     
-    # System errors (6xx)
+    # Системные ошибки (6xx)
     UNEXPECTED_ERROR = "UNEXPECTED_ERROR"
     INITIALIZATION_ERROR = "INITIALIZATION_ERROR"
     EXTRACT_INFO_NOT_CALLED = "EXTRACT_INFO_NOT_CALLED"
@@ -87,37 +88,37 @@ class RedditErrorCode(Enum):
 # ======= DataClasses =======
 @dataclass
 class RedditData(AbstractServiceData):
-    """Container for Reddit media data."""
+    """Контейнер данных о медиа с Reddit."""
     pass
 
 
 @dataclass
 class RedditImage(AbstractServiceImage):
-    """Represents a Reddit image."""
+    """Представление изображения с Reddit."""
     pass
 
 
 @dataclass
 class RedditVideo(AbstractServiceVideo):
-    """Represents a Reddit video format."""
+    """Представление видео с Reddit."""
     pass
 
 
 @dataclass
 class RedditAudio(AbstractServiceAudio):
-    """Represents a Reddit audio format."""
+    """Представление аудио с Reddit."""
     pass
 
 
 @dataclass
 class RedditResult(AbstractServiceResult):
-    """Result of Reddit operations."""
+    """Результат операций с Reddit."""
     code: RedditErrorCode = field(default=RedditErrorCode.SUCCESS)
 
 
 # ======= ExceptionClasses =======
 class ExtractInfoNotCalledError(Exception):
-    """Exception raised when download is attempted before extract_info."""
+    """Исключение при попытке загрузки до вызова extract_info()."""
     def __init__(self, message: str, code: RedditErrorCode = RedditErrorCode.EXTRACT_INFO_NOT_CALLED):
         super().__init__(message)
         self.code = code
@@ -125,16 +126,15 @@ class ExtractInfoNotCalledError(Exception):
 
 
 class CookieFileNotFoundError(FileNotFoundError):
-    """Exception raised when cookie file is not found."""
+    """Исключение при отсутствии файла cookie."""
     def __init__(self, message: str, code: RedditErrorCode = RedditErrorCode.COOKIE_FILE_NOT_FOUND):
         super().__init__(message)
         self.code = code
         self.message = message
 
 
-
 class InvalidRedditUrlError(ValueError):
-    """Exception raised for invalid Reddit URLs."""
+    """Исключение при некорректном URL Reddit."""
     def __init__(self, message: str, code: RedditErrorCode = RedditErrorCode.INVALID_URL):
         super().__init__(message)
         self.code = code
@@ -142,7 +142,7 @@ class InvalidRedditUrlError(ValueError):
 
 
 class UnsupportedContentTypeError(Exception):
-    """Exception raised for unsupported content types."""
+    """Исключение для неподдерживаемого типа контента."""
     def __init__(self, message: str, code: RedditErrorCode = RedditErrorCode.UNSUPPORTED_CONTENT):
         super().__init__(message)
         self.code = code
@@ -152,15 +152,15 @@ class UnsupportedContentTypeError(Exception):
 # ======= MainClass =======
 class RedditDownloader(AbstractServiceDownloader):
     """
-    Reddit media downloader.
+    Загрузчик медиа-контента с Reddit.
     
-    Supports downloading:
-    - Image galleries
-    - Video posts
-    - Single images
+    Поддерживает загрузку:
+    - Галерей изображений
+    - Видео-постов
+    - Отдельных изображений
     """
     
-    # Supported Reddit domains
+    # Поддерживаемые домены Reddit
     SUPPORTED_DOMAINS = {"reddit.com", "i.redd.it", "v.redd.it"}
 
     def __init__(
@@ -174,37 +174,37 @@ class RedditDownloader(AbstractServiceDownloader):
         user_agent: str = "bot/1.0 by TelegramDownloader",
     ) -> None:
         """
-        Initialize Reddit downloader.
+        Инициализация загрузчика Reddit.
         
         Args:
-            client_id: Reddit API client ID
-            client_secret: Reddit API client secret
-            retries_count: Number of retry attempts for downloads
-            proxy: Proxy server URL (optional)
-            cookie_path: Path to cookies file (optional)
-            concurrent_download_count: Number of concurrent fragment downloads
-            user_agent: User agent string for requests
+            client_id: ID клиента Reddit API
+            client_secret: Секрет клиента Reddit API
+            retries_count: Количество попыток повтора для загрузок
+            proxy: URL прокси-сервера (опционально)
+            cookie_path: Путь к файлу cookies (опционально)
+            concurrent_download_count: Количество одновременных загрузок фрагментов
+            user_agent: Строка User-Agent для запросов
         """
-        logger.info("Initializing Reddit downloader")
+        logger.info("Инициализация загрузчика Reddit")
         
         self.proxy = proxy
         self.cookies_path = Path(cookie_path) if cookie_path else None
 
-        # Validate cookie file
+        # Проверка существования файла cookie
         if self.cookies_path and not self.cookies_path.exists():
-            error_msg = f"Cookie file not found: {self.cookies_path}"
+            error_msg = f"Файл cookie не найден: {self.cookies_path}"
             logger.error(error_msg)
             raise CookieFileNotFoundError(error_msg, RedditErrorCode.COOKIE_FILE_NOT_FOUND)
 
         try:
-            # Initialize Reddit client
+            # Инициализация клиента Reddit
             self.reddit = Reddit(
                 client_id=client_id,
                 client_secret=client_secret,
                 user_agent=user_agent,
             )
             
-            # Configure yt-dlp options
+            # Настройка параметров yt-dlp
             self.ydl_opts: Dict[str, Optional[Union[bool, str, Path]]] = {
                 "quiet": True,
                 "proxy": self.proxy,
@@ -223,41 +223,41 @@ class RedditDownloader(AbstractServiceDownloader):
             self._data: Optional[RedditData] = None
             self._last_result: Optional[RedditResult] = None
             
-            logger.debug("Reddit downloader initialized successfully")
+            logger.debug("Загрузчик Reddit успешно инициализирован")
             
         except Exception as e:
-            error_msg = f"Failed to initialize Reddit downloader: {e}"
+            error_msg = f"Ошибка инициализации загрузчика Reddit: {e}"
             logger.error(error_msg)
             raise Exception(error_msg) from e
         
     def _validate_reddit_url(self, url: str) -> bool:
         """
-        Validate Reddit URL.
+        Проверка валидности URL Reddit.
         
         Args:
-            url: URL to validate
+            url: URL для проверки
             
         Returns:
-            True if URL is valid Reddit URL
+            True если URL является валидным URL Reddit
         """
         try:
             parsed = urlparse(url)
             return any(domain in parsed.netloc for domain in self.SUPPORTED_DOMAINS)
         except Exception as e:
-            logger.debug(f"URL validation error: {e}")
+            logger.debug(f"Ошибка проверки URL: {e}")
             return False
     
     def _classify_content_type(self, submission: Submission) -> ContentType:
         """
-        Classify Reddit submission content type.
+        Классификация типа контента публикации Reddit.
         
         Args:
-            submission: Reddit submission object
+            submission: Объект публикации Reddit
             
         Returns:
-            ContentType: The classified content type
+            ContentType: Классифицированный тип контента
         """
-        logger.debug("Classifying content type")
+        logger.debug("Классификация типа контента")
         
         if hasattr(submission, "is_gallery") and submission.is_gallery:
             result = ContentType.GALLERY
@@ -272,18 +272,21 @@ class RedditDownloader(AbstractServiceDownloader):
         elif (hasattr(submission, "domain") and 
               submission.domain == "v.redd.it"):
             result = ContentType.VIDEO
+        elif (hasattr(submission, "post_hint") and 
+              submission.post_hint == "link"):
+            result = ContentType.LINK
         else:
             result = ContentType.UNSUPPORTED
         
-        logger.debug(f"Content classified as: {result.value}")
+        logger.debug(f"Контент классифицирован как: {result.value}")
         return result
         
     def _extract_gallery(self, submission: Submission) -> None:
-        """Extract data from image gallery."""
-        logger.info(f"Extracting gallery from post: {submission.id}")
+        """Извлечение данных из галереи изображений."""
+        logger.info(f"Извлечение галереи из поста: {submission.id}")
 
         if not (hasattr(submission, "gallery_data") and submission.gallery_data):
-            error_msg = "No gallery data found"
+            error_msg = "Данные галереи не найдены"
             logger.error(error_msg)
             self._last_result = RedditResult(
                 status="error",
@@ -296,7 +299,7 @@ class RedditDownloader(AbstractServiceDownloader):
         try:
             gallery_items = submission.gallery_data.get("items", [])
             if not gallery_items:
-                error_msg = "Gallery data is empty"
+                error_msg = "Данные галереи пусты"
                 logger.error(error_msg)
                 self._last_result = RedditResult(
                     status="error",
@@ -331,9 +334,9 @@ class RedditDownloader(AbstractServiceDownloader):
                             
             if image_count > 0:
                 self._last_result = RedditResult(data=self._data)
-                logger.info(f"Successfully extracted {image_count} images from gallery")
+                logger.info(f"Успешно извлечено {image_count} изображений из галереи")
             else:
-                error_msg = "No valid images found in gallery"
+                error_msg = "В галерее не найдено валидных изображений"
                 logger.error(error_msg)
                 self._last_result = RedditResult(
                     status="error",
@@ -343,7 +346,7 @@ class RedditDownloader(AbstractServiceDownloader):
                 )
                 
         except Exception as e:
-            error_msg = f"Gallery extraction failed: {str(e)}"
+            error_msg = f"Ошибка извлечения галереи: {str(e)}"
             logger.error(error_msg)
             self._last_result = RedditResult(
                 status="error",
@@ -354,13 +357,13 @@ class RedditDownloader(AbstractServiceDownloader):
         
     def _get_extension(self, url: str) -> Tuple[str, str]:
         """
-        Extract filename and extension from URL.
+        Извлечение имени файла и расширения из URL.
         
         Args:
-            url: URL to extract from
+            url: URL для извлечения
             
         Returns:
-            Tuple of (name, extension)
+            Кортеж (имя, расширение)
         """
         parsed = urlparse(url=url)
         filename = os.path.basename(parsed.path)
@@ -368,13 +371,15 @@ class RedditDownloader(AbstractServiceDownloader):
         return (name, ext.replace(".", "").lower())
     
     def _extract_image_from_preview(self, submission: Submission) -> bool:
-        """Extract image from post preview data."""
+        """Извлечение изображения из данных предпросмотра поста."""
         if not (hasattr(submission, "preview") and submission.preview):
             return False
         
         name, ext = self._get_extension(url=submission.url)
-        images = submission.preview.get("images", [])
+        if not submission.preview:
+            return False
         
+        images = submission.preview.get("images", [])
         if not images:
             return False
         
@@ -390,8 +395,8 @@ class RedditDownloader(AbstractServiceDownloader):
         return True
     
     def _add_image_from_data(self, image_data: dict, base_name: str) -> None:
-        """Add images from preview data."""
-        # Additional resolutions
+        """Добавление изображений из данных предпросмотра."""
+        # Дополнительные разрешения
         for idx, resolution in enumerate(image_data.get("resolutions", [])):
             self._data.images.append(
                 RedditImage(
@@ -403,7 +408,7 @@ class RedditDownloader(AbstractServiceDownloader):
                 )
             )
             
-        # Main image (highest quality)
+        # Основное изображение (наивысшее качество)
         if "source" in image_data:
             source = image_data["source"]
             self._data.images.append(
@@ -417,16 +422,16 @@ class RedditDownloader(AbstractServiceDownloader):
             )
     
     def _extract_image(self, submission: Submission) -> None:
-        """Extract data from single image post."""
-        logger.info(f"Extracting image from post: {submission.id}")
+        """Извлечение данных из поста с одним изображением."""
+        logger.info(f"Извлечение изображения из поста: {submission.id}")
         
         try:
             if self._extract_image_from_preview(submission=submission):
                 self._last_result = RedditResult(data=self._data)
-                logger.info(f"Successfully extracted {len(self._data.images)} image variants from preview")
+                logger.info(f"Успешно извлечено {len(self._data.images)} вариантов изображения из предпросмотра")
                 return
             
-            # Fallback: use direct URL if preview is unavailable
+            # Резервный вариант: использование прямого URL если предпросмотр недоступен
             self._data.images.append(
                 RedditImage(
                     id=uuid4(),
@@ -437,10 +442,10 @@ class RedditDownloader(AbstractServiceDownloader):
                 )
             )
             self._last_result = RedditResult(data=self._data)
-            logger.info("Used direct image URL as fallback")
+            logger.info("Использован прямой URL изображения как резервный вариант")
             
         except Exception as e:
-            error_msg = f"Image extraction failed: {str(e)}"
+            error_msg = f"Ошибка извлечения изображения: {str(e)}"
             logger.error(error_msg)
             self._last_result = RedditResult(
                 status="error",
@@ -450,8 +455,8 @@ class RedditDownloader(AbstractServiceDownloader):
             )
         
     def _extract_video(self, submission: Submission) -> None:
-        """Extract data from video post."""
-        logger.info(f"Extracting video from post: {submission.id}")
+        """Извлечение данных из видео-поста."""
+        logger.info(f"Извлечение видео из поста: {submission.id}")
         
         ydl_opts = self.ydl_opts.copy()
         ydl_opts['listformats'] = True
@@ -459,10 +464,10 @@ class RedditDownloader(AbstractServiceDownloader):
         try:
             with YoutubeDL(params=ydl_opts) as ydl:
                 data = ydl.extract_info(url=submission.url, download=False)
-                logger.debug("Video info extraction completed")
+                logger.debug("Извлечение информации о видео завершено")
                 
         except ExtractorError as e:
-            error_msg = f"Video extractor error: {str(e)}"
+            error_msg = f"Ошибка экстрактора видео: {str(e)}"
             logger.error(error_msg)
             self._last_result = RedditResult(
                 status="error",
@@ -473,7 +478,7 @@ class RedditDownloader(AbstractServiceDownloader):
             return
         
         except DownloadError as e:
-            error_msg = f"Video download error: {str(e)}"
+            error_msg = f"Ошибка загрузки видео: {str(e)}"
             logger.error(error_msg)
             self._last_result = RedditResult(
                 status="error",
@@ -484,7 +489,7 @@ class RedditDownloader(AbstractServiceDownloader):
             return
     
         except Exception as e:
-            error_msg = f"Unexpected error during video extraction: {str(e)}"
+            error_msg = f"Неожиданная ошибка при извлечении видео: {str(e)}"
             logger.error(error_msg)
             self._last_result = RedditResult(
                 status="error",
@@ -494,29 +499,25 @@ class RedditDownloader(AbstractServiceDownloader):
             )
             return
         
-        # Populate metadata
-        self._data.title = data.get("title")
-        self._data.description = data.get("fulltitle")
-        
-        # Extract available formats
-        self._extract_media_formats(data)
-        self._extract_thumbnails(data)
+        if data.get("_type") == "playlist":
+            for item in data["entries"]:
+                self._extract_media_formats(item)
+                self._extract_thumbnails(item)
+                
+        else:
+            self._extract_media_formats(data)
+            self._extract_thumbnails(data)
         
         self._last_result = RedditResult(data=self._data)
-        logger.info(f"Successfully extracted video with {len(self._data.videos)} video formats and {len(self._data.audios)} audio formats")
-        
+        logger.info(f"Успешно извлечено видео с {len(self._data.videos)} видео-форматами и {len(self._data.audios)} аудио-форматами")
+
     def _extract_media_formats(self, data: dict) -> None:
-        """Extract available video and audio formats."""
-        video_count = 0
-        audio_count = 0
-        
+        """Извлечение доступных видео и аудио форматов."""
         for format in data.get("formats", []):
-            if (format["ext"] == "mp4" and 
-                format.get("acodec") == "none" and
-                format.get("vcodec", "").startswith("avc1") and
-                format.get("format_id", "").startswith("hls")):
-                
-                # Video formats (without audio)
+            if (
+                format["ext"] == "mp4"
+                and format["vcodec"] == "h264"
+            ):
                 self._data.videos.append(
                     RedditVideo(
                         id=uuid4(),
@@ -525,59 +526,85 @@ class RedditDownloader(AbstractServiceDownloader):
                         fps=format.get("fps"),
                         width=format.get("width"),
                         height=format.get("height"),
-                        duration=data.get("duration"),
                         total_bitrate=format.get("tbr"),
-                        caption=format.get("format_note"),
                     )
                 )
                 video_count += 1
                 
-            # Audio formats
-            elif (format["ext"] == "m4a" and 
-                  format.get("vcodec") == "none" and
-                  format.get("acodec", "").startswith("mp4a")):
+            elif (
+                format.get("ext") == "mp4" 
+                and format.get("vcodec", "").startswith("avc1")
+            ):
+                self._data.videos.append(
+                    RedditVideo(
+                        id=uuid4(),
+                        url=format["url"],
+                        name=format["format_id"],
+                        fps=format.get("fps"),
+                        width=format.get("width"),
+                        height=format.get("height"),
+                        total_bitrate=format.get("tbr"),
+                    )
+                )
+                video_count += 1
                 
+            elif (
+                format.get("ext") == "m4a"
+                and format.get("vcodec") == "none"
+                and format.get("acodec").startswith("mp4a")
+            ):
                 self._data.audios.append(
                     RedditAudio(
                         id=uuid4(),
                         url=format["url"],
                         name=format["format_id"],
-                        duration=data.get("duration"),
-                        total_bitrate=format.get("tbr"),
-                        caption=format.get("format_note"),
                     )
                 )
                 audio_count += 1
                 
-        logger.debug(f"Extracted {video_count} video formats and {audio_count} audio formats")
+            elif (
+                format.get("ext") == "m4a"
+                and format.get("vcodec") == "none"
+                and format.get("acodec").startswith("aac")
+            ):
+                self._data.audios.append(
+                    RedditAudio(
+                        id=uuid4(),
+                        url=format["url"],
+                        name=format["format_id"],
+                    )
+                )
+                audio_count += 1
+                
+        logger.debug(f"Извлечено {video_count} видео-форматов и {audio_count} аудио-форматов")
                   
     def _extract_thumbnails(self, data: dict) -> None:
-        """Extract thumbnails."""
+        """Извлечение миниатюр."""
         thumbnail_count = 0
         for idx, thumbnail in enumerate(data.get("thumbnails", [])):
             self._data.thumbnails.append(
                 RedditImage(
                     id=uuid4(),
                     url=thumbnail["url"],
-                    name=f"thumbnail_{idx}",
+                    name=f"Thumbnail_{idx}",
                     width=thumbnail.get("width"),
                     height=thumbnail.get("height"),
                 )
             )
             thumbnail_count += 1
             
-        logger.debug(f"Extracted {thumbnail_count} thumbnails")
+        logger.debug(f"Извлечено {thumbnail_count} миниатюр")
             
     def _generate_safe_filename(self, url: str, video_format_id: str) -> str:
         """
-        Generate safe filename based on URL hash.
+        Генерация безопасного имени файла на основе хеша URL.
         
         Args:
-            url: Content URL
-            video_format_id: Video format ID
+            url: URL контента
+            video_format_id: ID видео формата
             
         Returns:
-            Safe filename string
+            Строка с безопасным именем файла
         """
         hash_input = f"reddit_{url}_{video_format_id}"
         file_hash = hashlib.sha256(hash_input.encode()).hexdigest()[:16]
@@ -585,18 +612,18 @@ class RedditDownloader(AbstractServiceDownloader):
     
     def extract_info(self, url: str) -> RedditResult:
         """
-        Extract media information from Reddit URL.
+        Извлечение информации о медиа из URL Reddit.
         
         Args:
-            url: Reddit URL to extract information from
+            url: URL Reddit для извлечения информации
             
         Returns:
-            RedditResult: Result containing extracted media data
+            RedditResult: Результат, содержащий извлеченные данные медиа
         """
-        logger.info(f"Extracting info from URL: {url}")
+        logger.info(f"Извлечение информации из URL: {url}")
         
         if not url or not isinstance(url, str):
-            error_msg = "Invalid URL provided"
+            error_msg = "Предоставлен невалидный URL"
             logger.error(error_msg)
             return RedditResult(
                 status="error",
@@ -606,7 +633,7 @@ class RedditDownloader(AbstractServiceDownloader):
             )
             
         if not self._validate_reddit_url(url):
-            error_msg = "Invalid or unsupported Reddit URL"
+            error_msg = "Невалидный или неподдерживаемый URL Reddit"
             logger.error(error_msg)
             return RedditResult(
                 status="error",
@@ -618,14 +645,16 @@ class RedditDownloader(AbstractServiceDownloader):
         try:
             self._data = RedditData(url=url)
             submission = self.reddit.submission(url=url)
+            print(submission._fetch_data())
 
             self._data.title = getattr(submission, "title", None)
             self._data.description = getattr(submission, "selftext", None)
+            self._data.author_name = getattr(submission, "subreddit_name_prefixed", None)
             
-            # Classify content type and process accordingly
+            # Классификация типа контента и соответствующая обработка
             content_type = self._classify_content_type(submission)
             
-            logger.info(f"Detected content type: {content_type.value}")
+            logger.info(f"Обнаружен тип контента: {content_type.value}")
             
             if content_type == ContentType.GALLERY:
                 self._data.is_image = True
@@ -633,11 +662,11 @@ class RedditDownloader(AbstractServiceDownloader):
             elif content_type == ContentType.VIDEO:
                 self._data.is_video = True
                 self._extract_video(submission=submission)
-            elif content_type == ContentType.IMAGE:
+            elif content_type == ContentType.IMAGE or content_type == ContentType.LINK:
                 self._data.is_image = True
                 self._extract_image(submission=submission)
             else:
-                error_msg = f"Unsupported content type: {content_type.value}"
+                error_msg = f"Неподдерживаемый тип контента: {content_type.value}"
                 logger.error(error_msg)
                 self._last_result = RedditResult(
                     status="error",
@@ -649,7 +678,7 @@ class RedditDownloader(AbstractServiceDownloader):
             return self._last_result
         
         except Exception as e:
-            error_msg = f"Extraction failed: {str(e)}"
+            error_msg = f"Ошибка извлечения: {str(e)}"
             logger.error(error_msg)
             return RedditResult(
                 status="error",
@@ -665,33 +694,33 @@ class RedditDownloader(AbstractServiceDownloader):
         output_path: str = "./downloads/reddit/",
     ) -> RedditResult:
         """
-        Download media using previously extracted information.
+        Загрузка медиа с использованием ранее извлеченной информации.
         
         Args:
-            url: URL of the Rutube video to download
-            video_format_id: ID of the video format to download
-            output_path: Directory path for saving the downloaded file
+            url: URL видео Reddit для загрузки
+            video_format_id: ID видео формата для загрузки
+            output_path: Путь к директории для сохранения загруженного файла
             
         Returns:
-            RedditResult: Result of the download operation
+            RedditResult: Результат операции загрузки
             
         Raises:
-            ExtractInfoNotCalledError: If extract_info wasn't called first
+            ExtractInfoNotCalledError: Если extract_info не был вызван первым
         """
-        logger.info(f"Starting media download: url={url}, format={video_format_id}")
+        logger.info(f"Начало загрузки медиа: url={url}, format={video_format_id}")
          
-        # Prepare output directory
+        # Подготовка выходной директории
         output_dir = Path(output_path)
         output_dir.mkdir(parents=True, exist_ok=True)
         
-        # Generate safe filename
+        # Генерация безопасного имени файла
         safe_filename = self._generate_safe_filename(
             url=url,
             video_format_id=video_format_id,
         )
         file_path = output_dir / f"{safe_filename}.mp4"
         
-        # Configure download options
+        # Настройка параметров загрузки
         ydl_opts = self.ydl_opts.copy()
         ydl_opts.update({
             "outtmpl": str(file_path),
@@ -700,15 +729,15 @@ class RedditDownloader(AbstractServiceDownloader):
         })
         
         try:
-            logger.info(f"Starting download to: {file_path}")
+            logger.info(f"Начало загрузки в: {file_path}")
             with YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
                 
-            logger.info("Download completed successfully")
+            logger.info("Загрузка успешно завершена")
             return RedditResult(data=RedditData(url=url, path=file_path, is_video=True))
 
         except DownloadError as e:
-            error_msg = f"Download error: {e}"
+            error_msg = f"Ошибка загрузки: {e}"
             logger.error(error_msg)
             return RedditResult(
                 status="error",
@@ -717,7 +746,7 @@ class RedditDownloader(AbstractServiceDownloader):
                 data=RedditData(url=url)
             )
         except Exception as e:
-            error_msg = f"Unexpected download error: {e}"
+            error_msg = f"Неожиданная ошибка загрузки: {e}"
             logger.error(error_msg)
             return RedditResult(
                 status="error",
@@ -728,37 +757,37 @@ class RedditDownloader(AbstractServiceDownloader):
 
     def get_error_description(self, code: RedditErrorCode) -> str:
         """
-        Get human-readable description for error code.
+        Получение человеко-читаемого описания для кода ошибки.
         
         Args:
-            code: Error code enum value
+            code: Значение перечисления кода ошибки
             
         Returns:
-            Description string
+            Строка с описанием
         """
         descriptions = {
-            RedditErrorCode.SUCCESS: "Operation completed successfully",
-            RedditErrorCode.INVALID_URL: "The provided Reddit URL is invalid or not supported",
-            RedditErrorCode.EMPTY_URL: "Empty or invalid URL provided",
-            RedditErrorCode.UNSUPPORTED_CONTENT: "The Reddit content type is not supported",
-            RedditErrorCode.AUTHENTICATION_FAILED: "Reddit API authentication failed",
-            RedditErrorCode.API_ERROR: "Reddit API returned an error",
-            RedditErrorCode.RATELIMIT_EXCEEDED: "Reddit API rate limit exceeded",
-            RedditErrorCode.CONNECTION_ERROR: "Network connection error occurred",
-            RedditErrorCode.DOWNLOAD_ERROR: "Media download failed",
-            RedditErrorCode.EXTRACTOR_ERROR: "Media extraction failed",
-            RedditErrorCode.PROXY_ERROR: "Proxy connection error",
-            RedditErrorCode.GALLERY_DATA_MISSING: "Gallery data not found in post",
-            RedditErrorCode.GALLERY_EMPTY: "Gallery contains no items",
-            RedditErrorCode.VIDEO_EXTRACTION_FAILED: "Video content extraction failed",
-            RedditErrorCode.IMAGE_EXTRACTION_FAILED: "Image content extraction failed",
-            RedditErrorCode.MEDIA_METADATA_MISSING: "Media metadata not available",
-            RedditErrorCode.PREVIEW_DATA_MISSING: "Preview data not available",
-            RedditErrorCode.COOKIE_FILE_NOT_FOUND: "Cookie file not found",
-            RedditErrorCode.OUTPUT_PATH_ERROR: "Output path error",
-            RedditErrorCode.FILE_WRITE_ERROR: "File write error",
-            RedditErrorCode.UNEXPECTED_ERROR: "An unexpected error occurred",
-            RedditErrorCode.INITIALIZATION_ERROR: "Failed to initialize downloader",
-            RedditErrorCode.EXTRACT_INFO_NOT_CALLED: "extract_info() must be called before download",
+            RedditErrorCode.SUCCESS: "Операция успешно завершена",
+            RedditErrorCode.INVALID_URL: "Предоставленный URL Reddit невалиден или не поддерживается",
+            RedditErrorCode.EMPTY_URL: "Предоставлен пустой или невалидный URL",
+            RedditErrorCode.UNSUPPORTED_CONTENT: "Тип контента Reddit не поддерживается",
+            RedditErrorCode.AUTHENTICATION_FAILED: "Ошибка аутентификации Reddit API",
+            RedditErrorCode.API_ERROR: "Reddit API вернул ошибку",
+            RedditErrorCode.RATELIMIT_EXCEEDED: "Превышен лимит запросов Reddit API",
+            RedditErrorCode.CONNECTION_ERROR: "Произошла ошибка сетевого соединения",
+            RedditErrorCode.DOWNLOAD_ERROR: "Ошибка загрузки медиа",
+            RedditErrorCode.EXTRACTOR_ERROR: "Ошибка извлечения медиа",
+            RedditErrorCode.PROXY_ERROR: "Ошибка подключения к прокси",
+            RedditErrorCode.GALLERY_DATA_MISSING: "Данные галереи не найдены в посте",
+            RedditErrorCode.GALLERY_EMPTY: "Галерея не содержит элементов",
+            RedditErrorCode.VIDEO_EXTRACTION_FAILED: "Ошибка извлечения видео контента",
+            RedditErrorCode.IMAGE_EXTRACTION_FAILED: "Ошибка извлечения изображения",
+            RedditErrorCode.MEDIA_METADATA_MISSING: "Метаданные медиа недоступны",
+            RedditErrorCode.PREVIEW_DATA_MISSING: "Данные предпросмотра недоступны",
+            RedditErrorCode.COOKIE_FILE_NOT_FOUND: "Файл cookie не найден",
+            RedditErrorCode.OUTPUT_PATH_ERROR: "Ошибка пути вывода",
+            RedditErrorCode.FILE_WRITE_ERROR: "Ошибка записи файла",
+            RedditErrorCode.UNEXPECTED_ERROR: "Произошла непредвиденная ошибка",
+            RedditErrorCode.INITIALIZATION_ERROR: "Ошибка инициализации загрузчика",
+            RedditErrorCode.EXTRACT_INFO_NOT_CALLED: "extract_info() должен быть вызван перед загрузкой",
         }
-        return descriptions.get(code, "Unknown error")
+        return descriptions.get(code, "Неизвестная ошибка")

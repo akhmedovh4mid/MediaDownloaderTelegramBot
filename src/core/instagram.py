@@ -1,8 +1,8 @@
 """
-Instagram downloader module.
+Модуль загрузчика Instagram.
 
-This module provides functionality to download media content from Instagram,
-including images, videos, and carousel posts.
+Предоставляет функциональность для извлечения и загрузки медиа-контента 
+из Instagram, включая изображения, видео и карусельные публикации.
 """
 
 import logging
@@ -32,87 +32,86 @@ from .abstractions import (
 )
 
 
-# Setup logging
+# Настройка логирования
 logger = logging.getLogger("instagram")
 
 
 # ======= EnumsClasses =======
 class ContentType(Enum):
-    """Enum representing different Instagram content types."""
+    """Типы контента Instagram."""
     VIDEO = "GraphVideo"
     IMAGE = "GraphImage"
     SIDECAR = "GraphSidecar"
     
     
 class InstagramErrorCode(Enum):
-    """Enum representing error codes for Instagram operations."""
+    """Коды ошибок, возникающих при работе с Instagram."""
     
-    # Success
+    # Успех
     SUCCESS = "SUCCESS"
     
-    # Input validation errors (1xx)
-    INVALID_URL = "INVALID_URL"
-    INVALID_SHORTCODE = "INVALID_SHORTCODE"
-    EMPTY_URL = "EMPTY_URL"
+    # Ошибки валидации ввода (1xx)
+    INVALID_URL = "INVALID_URL"              # Неверный URL
+    INVALID_SHORTCODE = "INVALID_SHORTCODE"  # Ошибка извлечения shortcode
+    EMPTY_URL = "EMPTY_URL"                  # Пустой URL
     
-    # Authentication errors (2xx)
-    AUTHENTICATION_FAILED = "AUTHENTICATION_FAILED"
-    SESSION_LOAD_FAILED = "SESSION_LOAD_FAILED"
-    SESSION_SAVE_FAILED = "SESSION_SAVE_FAILED"
+    # Ошибки аутентификации (2xx)
+    AUTHENTICATION_FAILED = "AUTHENTICATION_FAILED"   # Ошибка входа
+    SESSION_LOAD_FAILED = "SESSION_LOAD_FAILED"       # Ошибка загрузки сессии
+    SESSION_SAVE_FAILED = "SESSION_SAVE_FAILED"       # Ошибка сохранения сессии
     
-    # Network errors (3xx)
-    CONNECTION_ERROR = "CONNECTION_ERROR"
-    TIMEOUT_ERROR = "TIMEOUT_ERROR"
-    BAD_RESPONSE = "BAD_RESPONSE"
+    # Сетевые ошибки (3xx)
+    CONNECTION_ERROR = "CONNECTION_ERROR"    # Ошибка соединения
+    TIMEOUT_ERROR = "TIMEOUT_ERROR"          # Превышен таймаут
+    BAD_RESPONSE = "BAD_RESPONSE"            # Некорректный ответ
     
-    # Content errors (4xx)
-    POST_NOT_FOUND = "POST_NOT_FOUND"
-    POST_CHANGED = "POST_CHANGED"
-    PROFILE_NOT_EXISTS = "PROFILE_NOT_EXISTS"
-    CONTENT_NOT_SUPPORTED = "CONTENT_NOT_SUPPORTED"
-    EXTRACTION_ERROR = "EXTRACTION_ERROR"
+    # Ошибки контента (4xx)
+    POST_NOT_FOUND = "POST_NOT_FOUND"        # Пост не найден
+    POST_CHANGED = "POST_CHANGED"            # Пост изменился
+    PROFILE_NOT_EXISTS = "PROFILE_NOT_EXISTS" # Профиль не существует
+    CONTENT_NOT_SUPPORTED = "CONTENT_NOT_SUPPORTED"   # Неподдерживаемый контент
+    EXTRACTION_ERROR = "EXTRACTION_ERROR"    # Ошибка извлечения
     
-    # System errors (5xx)
-    UNEXPECTED_ERROR = "UNEXPECTED_ERROR"
-    INITIALIZATION_ERROR = "INITIALIZATION_ERROR"
-    DOWNLOAD_ERROR = "DOWNLOAD_ERROR"
+    # Системные ошибки (5xx)
+    UNEXPECTED_ERROR = "UNEXPECTED_ERROR"    # Неожиданная ошибка
+    INITIALIZATION_ERROR = "INITIALIZATION_ERROR" # Ошибка инициализации
+    DOWNLOAD_ERROR = "DOWNLOAD_ERROR"        # Ошибка загрузки
     
 
 # ======= DataClasses =======
 @dataclass
 class InstagramData(AbstractServiceData):
-    """Container for Instagram media data."""
+    """Контейнер с медиа-данными Instagram."""
     pass
 
 
 @dataclass
 class InstagramImage(AbstractServiceImage):
-    """Represents an Instagram image."""
+    """Объект изображения Instagram."""
     pass
 
 
 @dataclass
 class InstagramVideo(AbstractServiceVideo):
-    """Represents an Instagram video."""
+    """Объект видео Instagram."""
     pass
 
 
 @dataclass
 class InstagramAudio(AbstractServiceAudio):
-    """Represents Instagram audio (for stories and reels)."""
+    """Объект аудио Instagram (например, для сторис или рилсов)."""
     pass
-
 
 
 @dataclass
 class InstagramResult(AbstractServiceResult):
-    """Result of Instagram operations."""
+    """Результат выполнения операций Instagram."""
     code: InstagramErrorCode = field(default=InstagramErrorCode.SUCCESS)
 
 
 # ======= ExceptionClasses =======
 class InstagramSessionError(Exception):
-    """Exception raised for Instagram session errors."""
+    """Исключение для ошибок сессии Instagram."""
     def __init__(self, message: str, code: InstagramErrorCode = InstagramErrorCode.AUTHENTICATION_FAILED):
         super().__init__(message)
         self.code = code
@@ -120,7 +119,7 @@ class InstagramSessionError(Exception):
 
 
 class InvalidInstagramUrlError(ValueError):
-    """Exception raised for invalid Instagram URLs."""
+    """Исключение для некорректных URL Instagram."""
     def __init__(self, message: str, code: InstagramErrorCode = InstagramErrorCode.INVALID_URL):
         super().__init__(message)
         self.code = code
@@ -128,7 +127,7 @@ class InvalidInstagramUrlError(ValueError):
 
 
 class InstagramPostNotFoundError(Exception):
-    """Exception raised when post is not found."""
+    """Исключение, когда публикация не найдена."""
     def __init__(self, message: str, code: InstagramErrorCode = InstagramErrorCode.POST_NOT_FOUND):
         super().__init__(message)
         self.code = code
@@ -136,7 +135,7 @@ class InstagramPostNotFoundError(Exception):
 
 
 class ExtractInfoNotCalledError(Exception):
-    """Exception raised when download is attempted before extract_info."""
+    """Исключение при попытке загрузки до вызова extract_info()."""
     def __init__(self, message: str, code: InstagramErrorCode = InstagramErrorCode.EXTRACTION_ERROR):
         super().__init__(message)
         self.code = code
@@ -146,12 +145,12 @@ class ExtractInfoNotCalledError(Exception):
 # ======= MainClass =======
 class InstagramDownloader(AbstractServiceDownloader):
     """
-    Instagram media downloader.
+    Загрузчик медиа из Instagram.
     
-    Supports downloading:
-    - Single images
-    - Video posts
-    - Carousel albums
+    Поддерживает:
+    - отдельные изображения
+    - публикации с видео
+    - альбомы (карусели)
     - Reels
     - IGTV
     """
@@ -165,23 +164,23 @@ class InstagramDownloader(AbstractServiceDownloader):
         cookie_path: str = "cookies",
     ) -> None:
         """
-        Initialize Instagram downloader.
+        Инициализация загрузчика Instagram.
         
-        Args:
-            username: Instagram username
-            password: Instagram password
-            timeout: Request timeout in seconds
-            max_retries: Maximum number of connection retries
-            cookie_path: Path for storing cookies and session
+        Аргументы:
+            username: Имя пользователя Instagram
+            password: Пароль пользователя Instagram
+            timeout: Время ожидания запроса в секундах
+            max_retries: Максимальное количество повторных попыток подключения
+            cookie_path: Путь для хранения cookies и сессии
         """
-        logger.info("Initializing Instagram downloader")
+        logger.info("Инициализация загрузчика Instagram")
         
         self.timeout = timeout
         self.username = username
         self.password = password
         self.max_retries = max_retries
         
-        # Initialize Instaloader
+        # Инициализация Instaloader
         self.loader = Instaloader(
             request_timeout=self.timeout,
             max_connection_attempts=self.max_retries,
@@ -197,63 +196,63 @@ class InstagramDownloader(AbstractServiceDownloader):
         self._init_loader()
         
     def _init_loader(self) -> None:
-        """Initialize and authenticate with Instagram."""
+        """Инициализация и аутентификация в Instagram."""
         try:
             if self.session_file.exists():
-                logger.info(f"Loading session from: {self.session_file}")
+                logger.info(f"Загрузка сессии из файла: {self.session_file}")
                 self.loader.load_session_from_file(
                     username=self.username,
                     filename=str(self.session_file)
                 )
-                logger.info("Session loaded successfully")
+                logger.info("Сессия успешно загружена")
             else:
-                logger.info("Creating new session...")
+                logger.info("Создание новой сессии...")
                 self.cookie_path.mkdir(parents=True, exist_ok=True)
                 self.loader.login(user=self.username, passwd=self.password)
                 self.loader.save_session_to_file(filename=str(self.session_file))
-                logger.info("Session created and saved successfully")
+                logger.info("Сессия успешно создана и сохранена")
                 
         except ConnectionException as e:
-            error_msg = f"Connection error during login: {e}"
+            error_msg = f"Ошибка соединения при входе: {e}"
             logger.error(error_msg)
             raise InstagramSessionError(error_msg, InstagramErrorCode.CONNECTION_ERROR)
         
         except QueryReturnedBadRequestException as e:
-            error_msg = f"Authentication failed: {e}"
+            error_msg = f"Аутентификация не удалась: {e}"
             logger.error(error_msg)
             raise InstagramSessionError(error_msg, InstagramErrorCode.AUTHENTICATION_FAILED)
         
         except Exception as e:
-            error_msg = f"Unexpected error during initialization: {e}"
+            error_msg = f"Неожиданная ошибка при инициализации: {e}"
             logger.error(error_msg)
             raise InstagramSessionError(error_msg, InstagramErrorCode.INITIALIZATION_ERROR)
         
     def _validate_instagram_url(self, url: str) -> bool:
         """
-        Validate Instagram URL.
+        Проверка корректности URL Instagram.
         
-        Args:
-            url: URL to validate
+        Аргументы:
+            url: URL для проверки
             
-        Returns:
-            True if URL is valid Instagram URL
+        Возвращает:
+            True, если URL корректный
         """
         try:
             parsed_url = urlparse(url=url)
             return parsed_url.netloc.endswith("instagram.com")
         except Exception as e:
-            logger.debug(f"URL validation error: {e}")
+            logger.debug(f"Ошибка при проверке URL: {e}")
             return False
 
     def _get_shortcode(self, url: str) -> Optional[str]:
         """
-        Extract shortcode from Instagram URL.
+        Извлечение shortcode из URL Instagram.
         
-        Args:
-            url: Instagram URL
+        Аргументы:
+            url: URL Instagram
             
-        Returns:
-            Shortcode string or None if extraction fails
+        Возвращает:
+            Shortcode поста или None, если извлечение не удалось
         """
         try:
             parsed_url = urlparse(url=url)
@@ -262,28 +261,29 @@ class InstagramDownloader(AbstractServiceDownloader):
             if (len(path_parts) >= 2 and 
                 path_parts[0] in ["p", "tv", "reel", "reels"]):
                 shortcode = path_parts[1]
-                logger.debug(f"Extracted shortcode: {shortcode}")
+                logger.debug(f"Извлечён shortcode: {shortcode}")
                 return shortcode
             
             if len(path_parts) == 1 and len(path_parts[0]) == 11:
                 shortcode = path_parts[0]
-                logger.debug(f"Extracted shortcode: {shortcode}")
+                logger.debug(f"Извлечён shortcode: {shortcode}")
                 return shortcode
                 
-            logger.warning(f"Could not extract shortcode from URL: {url}")
+            logger.warning(f"Не удалось извлечь shortcode из URL: {url}")
             return None
         
         except Exception as e:
-            logger.error(f"Error extracting shortcode from URL {url}: {e}")
+            logger.error(f"Ошибка при извлечении shortcode из URL {url}: {e}")
             return None
         
     def _extract_media_info(self, post: Post) -> None:
-        """Extract media information from Instagram post."""
-        logger.debug("Extracting media info from post")
+        """Извлечение информации о медиа из поста Instagram."""
+        logger.debug("Извлечение информации о медиа из поста")
         
         data = post._node
+        
         if data is None:
-            error_msg = "Post data not found"
+            error_msg = "Данные поста не найдены"
             logger.error(error_msg)
             self._last_result = InstagramResult(
                 status="error",
@@ -293,15 +293,20 @@ class InstagramDownloader(AbstractServiceDownloader):
             )
             return
         
-        # Extract caption
+        # Извлечение подписи
         caption = data.get("accessibility_caption")
         if caption and caption != "None":
             self._data.title = caption
+        
+        # Извлечение имени владельца
+        owner_data = data.get("owner")
+        if owner_data and owner_data.get("username"):
+            self._data.author_name = owner_data.get("username")
             
         content_type = data["__typename"]
-        logger.debug(f"Content type: {content_type}")
+        logger.debug(f"Тип контента: {content_type}")
         
-        # Handle different content types
+        # Обработка разных типов контента
         if content_type.endswith(ContentType.VIDEO.value):
             self._data.is_video = True
             self._extract_video_content(data)
@@ -312,7 +317,7 @@ class InstagramDownloader(AbstractServiceDownloader):
             self._data.is_image = True
             self._extract_sidecar_content(data)
         else:
-            error_msg = f"Unsupported content type: {content_type}"
+            error_msg = f"Тип контента не поддерживается: {content_type}"
             logger.error(error_msg)
             self._last_result = InstagramResult(
                 status="error",
@@ -322,113 +327,115 @@ class InstagramDownloader(AbstractServiceDownloader):
             )
     
     def _extract_video_content(self, data: dict) -> None:
-        """Extract video content information."""
-        logger.debug("Extracting video content")
+        """Извлечение информации о видео."""
+        logger.debug("Извлечение видео")
         
-        # Add video
+        # Извлечение видео
+        dimensions = data.get("dimensions")
         self._data.videos.append(
             InstagramVideo(
                 id=uuid4(),
                 url=data["video_url"],
-                name=f"{ContentType.VIDEO.value}_{data['shortcode']}",
-                width=data["dimensions"]["width"],
-                height=data["dimensions"]["height"],
-                duration=data["video_duration"],
+                name=f"Video_{data['shortcode']}",
+                width=dimensions.get("width") if dimensions else None,
+                height=dimensions.get("height") if dimensions else None,
             )
         )
         
-        # Add thumbnails
+        # Извлечение миниатюр
         thumbnail_count = 0
-        for image in data.get("display_resources", []):
+        for idx, image in enumerate(data.get("display_resources", [])):
             self._data.thumbnails.append(
                 InstagramImage(
                     id=uuid4(),
                     url=image["src"],
-                    name=f"{ContentType.IMAGE.value}_{image['config_width']}x{image['config_height']}",
+                    name=f"Thumbnail_{idx}",
                     width=image.get("config_width"),
                     height=image.get("config_height"),
                 )
             )
             thumbnail_count += 1
             
-        logger.debug(f"Extracted 1 video and {thumbnail_count} thumbnails")
+        logger.debug(f"Извлечено 1 видео и {thumbnail_count} миниатюр")
         self._last_result = InstagramResult(data=self._data)
     
     def _extract_image_content(self, data: dict) -> None:
-        """Extract image content information."""
-        logger.debug("Extracting image content")
+        """Извлечение информации об изображениях."""
+        logger.debug("Извлечение изображений")
         
         image_count = 0
-        for image in data.get("display_resources", []):
+        for idx, image in enumerate(data.get("display_resources", [])):
             self._data.images.append(
                 InstagramImage(
                     id=uuid4(),
                     url=image["src"],
-                    name=f"{ContentType.IMAGE.value}_{image['config_width']}x{image['config_height']}",
+                    name=f"Image_{idx}",
                     width=image.get("config_width"),
                     height=image.get("config_height"),
                 )
             )
             image_count += 1
             
-        logger.debug(f"Extracted {image_count} images")
+        logger.debug(f"Извлечено {image_count} изображений")
         self._last_result = InstagramResult(data=self._data)
     
     def _extract_sidecar_content(self, data: dict) -> None:
-        """Extract sidecar (carousel) content information."""
-        logger.debug("Extracting sidecar content")
+        """Извлечение информации о карусели (альбоме)."""
+        logger.debug("Извлечение карусели")
         
         image_count = 0
         video_count = 0
         
-        for idx, media_item in enumerate(data["edge_sidecar_to_children"]["edges"]):
-            media_item_node = media_item["node"]
-            media_content_type = media_item_node["__typename"]
-            
-            if media_content_type.endswith(ContentType.IMAGE.value):
-                for image in media_item_node.get("display_resources", []):
-                    self._data.images.append(
-                        InstagramImage(
+        children_sidecar = data.get("edge_sidecar_to_children")
+        for idx, media_item in enumerate(children_sidecar.get("edges", []) if children_sidecar else []):
+            media_item_node = media_item.get("node")
+            if media_item_node:
+                media_content_type = media_item_node["__typename"]
+                
+                if media_content_type.endswith(ContentType.IMAGE.value):
+                    for jdx, image in enumerate(media_item_node.get("display_resources", [])):
+                        self._data.images.append(
+                            InstagramImage(
+                                id=uuid4(),
+                                url=image["src"],
+                                name=f"Image_{jdx}_{idx}",
+                                width=image.get("config_width"),
+                                height=image.get("config_height"),
+                            )
+                        )
+                        image_count += 1
+    
+                elif media_content_type.endswith(ContentType.VIDEO.value):
+                    dimensions = media_item_node.get("dimensions")
+                    self._data.videos.append(
+                        InstagramVideo(
                             id=uuid4(),
-                            url=image["src"],
-                            name=f"{ContentType.IMAGE.value}_{image['config_width']}x{image['config_height']}_{idx}",
-                            width=image["config_width"],
-                            height=image["config_height"],
+                            url=media_item_node["video_url"],
+                            name=f"Video_{media_item_node["shortcode"]}",
+                            width=dimensions.get("width") if dimensions else None,
+                            height=dimensions.get("height") if dimensions else None,
                         )
                     )
-                    image_count += 1
+                    video_count += 1
                     
-            elif media_content_type.endswith(ContentType.VIDEO.value):
-                self._data.videos.append(
-                    InstagramVideo(
-                        id=uuid4(),
-                        url=media_item_node["video_url"],
-                        name=f"{ContentType.VIDEO.value}_{media_item_node['shortcode']}",
-                        width=media_item_node["dimensions"]["width"],
-                        height=media_item_node["dimensions"]["height"],
-                        duration=media_item_node["video_duration"],
-                    )
-                )
-                video_count += 1
-                    
-        logger.debug(f"Extracted {image_count} images and {video_count} videos from sidecar")
+        logger.debug(f"Извлечено {image_count} изображений и {video_count} видео из карусели")
         self._last_result = InstagramResult(data=self._data)
     
     def extract_info(self, url: str) -> InstagramResult:
         """
-        Extract media information from Instagram URL.
+        Извлечение информации о медиа из URL Instagram.
         
-        Args:
-            url: Instagram URL to extract information from
+        Аргументы:
+            url: URL поста Instagram
             
-        Returns:
-            InstagramResult: Result containing extracted media data
+        Возвращает:
+            InstagramResult с извлечёнными данными о медиа
         """
-        logger.info(f"Extracting info from URL: {url}")
+        logger.info(f"Извлечение информации из URL: {url}")
         
-        # Validate URL
+        # Проверка URL
         if not url or not isinstance(url, str):
-            error_msg = "Invalid URL provided"
+            error_msg = "Некорректный URL"
             logger.error(error_msg)
             self._last_result = InstagramResult(
                 status="error",
@@ -439,7 +446,7 @@ class InstagramDownloader(AbstractServiceDownloader):
             return self._last_result
         
         if not self._validate_instagram_url(url):
-            error_msg = "Invalid or unsupported Instagram URL"
+            error_msg = "Некорректный или неподдерживаемый URL Instagram"
             logger.error(error_msg)
             self._last_result = InstagramResult(
                 status="error",
@@ -449,10 +456,10 @@ class InstagramDownloader(AbstractServiceDownloader):
             )
             return self._last_result
         
-        # Extract shortcode
+        # Извлечение shortcode
         shortcode = self._get_shortcode(url)
         if not shortcode:
-            error_msg = "Could not extract shortcode from URL"
+            error_msg = "Не удалось извлечь shortcode из URL"
             logger.error(error_msg)
             self._last_result = InstagramResult(
                 status="error",
@@ -463,27 +470,22 @@ class InstagramDownloader(AbstractServiceDownloader):
             return self._last_result
         
         try:
-            logger.info(f"Extracting info for shortcode: {shortcode}")
+            logger.info(f"Извлечение информации для shortcode: {shortcode}")
             
-            # Load post
             post = Post.from_shortcode(self.loader.context, shortcode)
-            
-            # Initialize data
             self._data = InstagramData(url=url)
-            
-            # Extract media information
             self._extract_media_info(post)
             
             if self._last_result and self._last_result.status != "error":
-                logger.info(f"Successfully extracted info: {len(self._data.images)} images, "
-                           f"{len(self._data.videos)} videos")
+                logger.info(f"Информация успешно извлечена: {len(self._data.images)} изображений, "
+                           f"{len(self._data.videos)} видео")
             else:
-                logger.warning("Info extraction completed with errors")
+                logger.warning("Извлечение информации завершилось с ошибками")
             
             return self._last_result
             
         except PostChangedException as e:
-            error_msg = f"Post has changed or is not available: {e}"
+            error_msg = f"Пост изменён или недоступен: {e}"
             logger.error(error_msg)
             self._last_result = InstagramResult(
                 status="error",
@@ -494,7 +496,7 @@ class InstagramDownloader(AbstractServiceDownloader):
             return self._last_result
         
         except ProfileNotExistsException as e:
-            error_msg = f"Profile not found: {e}"
+            error_msg = f"Профиль не найден: {e}"
             logger.error(error_msg)
             self._last_result = InstagramResult(
                 status="error",
@@ -505,7 +507,7 @@ class InstagramDownloader(AbstractServiceDownloader):
             return self._last_result
         
         except ConnectionException as e:
-            error_msg = f"Connection error: {e}"
+            error_msg = f"Ошибка соединения: {e}"
             logger.error(error_msg)
             self._last_result = InstagramResult(
                 status="error",
@@ -516,7 +518,7 @@ class InstagramDownloader(AbstractServiceDownloader):
             return self._last_result
         
         except BadResponseException as e:
-            error_msg = f"Bad API response: {e}"
+            error_msg = f"Некорректный ответ API: {e}"
             logger.error(error_msg)
             self._last_result = InstagramResult(
                 status="error",
@@ -527,7 +529,7 @@ class InstagramDownloader(AbstractServiceDownloader):
             return self._last_result
             
         except Exception as e:
-            error_msg = f"Unexpected error during extraction: {e}"
+            error_msg = f"Неожиданная ошибка при извлечении: {e}"
             logger.error(error_msg)
             self._last_result = InstagramResult(
                 status="error",
@@ -539,32 +541,32 @@ class InstagramDownloader(AbstractServiceDownloader):
 
     def get_error_description(self, code: InstagramErrorCode) -> str:
         """
-        Get human-readable description for error code.
+        Получение описания ошибки по коду.
         
-        Args:
-            code: Error code enum value
+        Аргументы:
+            code: Код ошибки
             
-        Returns:
-            Description string
+        Возвращает:
+            Строку с описанием ошибки
         """
         descriptions = {
-            InstagramErrorCode.SUCCESS: "Operation completed successfully",
-            InstagramErrorCode.INVALID_URL: "The provided URL is invalid or not supported",
-            InstagramErrorCode.INVALID_SHORTCODE: "Could not extract shortcode from URL",
-            InstagramErrorCode.EMPTY_URL: "Empty or invalid URL provided",
-            InstagramErrorCode.AUTHENTICATION_FAILED: "Instagram authentication failed",
-            InstagramErrorCode.SESSION_LOAD_FAILED: "Failed to load session from file",
-            InstagramErrorCode.SESSION_SAVE_FAILED: "Failed to save session to file",
-            InstagramErrorCode.CONNECTION_ERROR: "Network connection error occurred",
-            InstagramErrorCode.TIMEOUT_ERROR: "Request timeout exceeded",
-            InstagramErrorCode.BAD_RESPONSE: "Received bad response from Instagram API",
-            InstagramErrorCode.POST_NOT_FOUND: "The requested post was not found",
-            InstagramErrorCode.POST_CHANGED: "The post has changed or is no longer available",
-            InstagramErrorCode.PROFILE_NOT_EXISTS: "The requested profile does not exist",
-            InstagramErrorCode.CONTENT_NOT_SUPPORTED: "The content type is not supported",
-            InstagramErrorCode.EXTRACTION_ERROR: "Error occurred during content extraction",
-            InstagramErrorCode.UNEXPECTED_ERROR: "An unexpected error occurred",
-            InstagramErrorCode.INITIALIZATION_ERROR: "Failed to initialize downloader",
-            InstagramErrorCode.DOWNLOAD_ERROR: "Error occurred during download",
+            InstagramErrorCode.SUCCESS: "Операция выполнена успешно",
+            InstagramErrorCode.INVALID_URL: "Неправильный или неподдерживаемый URL",
+            InstagramErrorCode.INVALID_SHORTCODE: "Не удалось извлечь shortcode из URL",
+            InstagramErrorCode.EMPTY_URL: "Пустой или некорректный URL",
+            InstagramErrorCode.AUTHENTICATION_FAILED: "Ошибка аутентификации в Instagram",
+            InstagramErrorCode.SESSION_LOAD_FAILED: "Не удалось загрузить сессию из файла",
+            InstagramErrorCode.SESSION_SAVE_FAILED: "Не удалось сохранить сессию в файл",
+            InstagramErrorCode.CONNECTION_ERROR: "Ошибка сетевого соединения",
+            InstagramErrorCode.TIMEOUT_ERROR: "Превышено время ожидания запроса",
+            InstagramErrorCode.BAD_RESPONSE: "Некорректный ответ API Instagram",
+            InstagramErrorCode.POST_NOT_FOUND: "Пост не найден",
+            InstagramErrorCode.POST_CHANGED: "Пост изменён или недоступен",
+            InstagramErrorCode.PROFILE_NOT_EXISTS: "Профиль не существует",
+            InstagramErrorCode.CONTENT_NOT_SUPPORTED: "Тип контента не поддерживается",
+            InstagramErrorCode.EXTRACTION_ERROR: "Ошибка при извлечении контента",
+            InstagramErrorCode.UNEXPECTED_ERROR: "Произошла непредвиденная ошибка",
+            InstagramErrorCode.INITIALIZATION_ERROR: "Ошибка инициализации загрузчика",
+            InstagramErrorCode.DOWNLOAD_ERROR: "Ошибка при скачивании контента",
         }
-        return descriptions.get(code, "Unknown error")
+        return descriptions.get(code, "Неизвестная ошибка")

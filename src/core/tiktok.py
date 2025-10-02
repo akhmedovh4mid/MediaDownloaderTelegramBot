@@ -1,8 +1,8 @@
 """
-TikTok downloader module.
+Модуль загрузчика TikTok.
 
-This module provides functionality to download media content from TikTok,
-including videos, images, and audio.
+Этот модуль предоставляет функционал для загрузки медиа-контента с TikTok,
+включая видео, изображения и аудио.
 """
 
 import hashlib
@@ -28,13 +28,13 @@ from .abstractions import (
 )
 
 
-# Setup logging
+# Настройка логирования
 logger = logging.getLogger("tiktok")
 
 
 # ======= EnumsClasses =======
 class ContentType(Enum):
-    """Enum representing different TikTok content types."""
+    """Перечисление, представляющее различные типы контента TikTok."""
     LIVE = "live"
     PHOTO = "photo"
     VIDEO = "video"
@@ -44,40 +44,40 @@ class ContentType(Enum):
     
     
 class TikTokErrorCode(Enum):
-    """Enum representing error codes for TikTok operations."""
+    """Перечисление, представляющее коды ошибок для операций с TikTok."""
     
-    # Success
+    # Успех
     SUCCESS = "SUCCESS"
     
-    # Input validation errors (1xx)
+    # Ошибки проверки входных данных (1xx)
     INVALID_URL = "INVALID_URL"
     EMPTY_URL = "EMPTY_URL"
     UNSUPPORTED_CONTENT_TYPE = "UNSUPPORTED_CONTENT_TYPE"
     URL_RESOLUTION_FAILED = "URL_RESOLUTION_FAILED"
     
-    # Network errors (2xx)
+    # Сетевые ошибки (2xx)
     CONNECTION_ERROR = "CONNECTION_ERROR"
     DOWNLOAD_ERROR = "DOWNLOAD_ERROR"
     EXTRACTOR_ERROR = "EXTRACTOR_ERROR"
     PROXY_ERROR = "PROXY_ERROR"
     
-    # Content errors (3xx)
+    # Ошибки контента (3xx)
     NO_EXTRACTOR_FOUND = "NO_EXTRACTOR_FOUND"
     NO_CONTENT_FOUND = "NO_CONTENT_FOUND"
     METADATA_EXTRACTION_FAILED = "METADATA_EXTRACTION_FAILED"
     VIDEO_EXTRACTION_FAILED = "VIDEO_EXTRACTION_FAILED"
     PHOTO_EXTRACTION_FAILED = "PHOTO_EXTRACTION_FAILED"
     MUSIC_EXTRACTION_FAILED = "MUSIC_EXTRACTION_FAILED"
-    NO_VIDEO_FORMATS_FOUND = "NO_VIDEO_FORMATS_FOUND"
+    NO_MEDIA_FORMATS_FOUND = "NO_MEDIA_FORMATS_FOUND"
     NO_IMAGES_FOUND = "NO_IMAGES_FOUND"
     NO_THUMBNAILS_FOUND = "NO_THUMBNAILS_FOUND"
     
-    # File system errors (4xx)
+    # Ошибки файловой системы (4xx)
     COOKIE_FILE_NOT_FOUND = "COOKIE_FILE_NOT_FOUND"
     OUTPUT_PATH_ERROR = "OUTPUT_PATH_ERROR"
     FILE_WRITE_ERROR = "FILE_WRITE_ERROR"
     
-    # System errors (5xx)
+    # Системные ошибки (5xx)
     UNEXPECTED_ERROR = "UNEXPECTED_ERROR"
     INITIALIZATION_ERROR = "INITIALIZATION_ERROR"
     EXTRACT_INFO_NOT_CALLED = "EXTRACT_INFO_NOT_CALLED"
@@ -88,37 +88,37 @@ class TikTokErrorCode(Enum):
 # ======= DataClasses =======
 @dataclass
 class TikTokData(AbstractServiceData):
-    """Container for TikTok media data."""
+    """Контейнер для данных медиа с TikTok."""
     pass
 
 
 @dataclass
 class TikTokImage(AbstractServiceImage):
-    """Represents a TikTok image."""
+    """Представляет изображение TikTok."""
     pass
 
 
 @dataclass
 class TikTokVideo(AbstractServiceVideo):
-    """Represents a TikTok video format."""
+    """Представляет видео формат TikTok."""
     pass
 
 
 @dataclass
 class TikTokAudio(AbstractServiceAudio):
-    """Represents a TikTok audio format."""
+    """Представляет аудио формат TikTok."""
     pass
 
 
 @dataclass
 class TikTokResult(AbstractServiceResult):
-    """Result of TikTok operations."""
+    """Результат операций с TikTok."""
     code: TikTokErrorCode = field(default=TikTokErrorCode.SUCCESS)
 
 
 # ======= ExceptionClasses =======
 class ExtractInfoNotCalledError(Exception):
-    """Exception raised when download is attempted before extract_info."""
+    """Исключение при попытке загрузки до вызова extract_info."""
     def __init__(self, message: str, code: TikTokErrorCode = TikTokErrorCode.EXTRACT_INFO_NOT_CALLED):
         super().__init__(message)
         self.code = code
@@ -126,7 +126,7 @@ class ExtractInfoNotCalledError(Exception):
 
 
 class CookieFileNotFoundError(FileNotFoundError):
-    """Exception raised when cookie file is not found."""
+    """Исключение при отсутствии файла cookie."""
     def __init__(self, message: str, code: TikTokErrorCode = TikTokErrorCode.COOKIE_FILE_NOT_FOUND):
         super().__init__(message)
         self.code = code
@@ -134,7 +134,7 @@ class CookieFileNotFoundError(FileNotFoundError):
 
 
 class UnsupportedContentTypeError(Exception):
-    """Exception raised for unsupported content types."""
+    """Исключение для неподдерживаемых типов контента."""
     def __init__(self, message: str, code: TikTokErrorCode = TikTokErrorCode.UNSUPPORTED_CONTENT_TYPE):
         super().__init__(message)
         self.code = code
@@ -144,10 +144,10 @@ class UnsupportedContentTypeError(Exception):
 # ======= MainClass =======
 class TikTokDownloader(AbstractServiceDownloader):
     """
-    TikTok media downloader.
+    Загрузчик медиа-контента с TikTok.
     
-    Supports downloading videos and images from TikTok.
-    Handles URL resolution and content type classification.
+    Поддерживает загрузку видео и изображений с TikTok.
+    Обрабатывает разрешение URL и классификацию типов контента.
     """
 
     def __init__(
@@ -158,21 +158,21 @@ class TikTokDownloader(AbstractServiceDownloader):
         concurrent_download_count: int = 2,
     ) -> None:
         """
-        Initialize TikTok downloader.
+        Инициализация загрузчика TikTok.
         
         Args:
-            retries_count: Number of retry attempts for downloads
-            proxy: Proxy server URL (optional)
-            cookie_path: Path to cookies file (optional)
-            concurrent_download_count: Number of concurrent fragment downloads
+            retries_count: Количество попыток повтора для загрузок
+            proxy: URL прокси-сервера (опционально)
+            cookie_path: Путь к файлу cookies (опционально)
+            concurrent_download_count: Количество одновременных загрузок фрагментов
         """
-        logger.info("Initializing TikTok downloader")
+        logger.info("Инициализация загрузчика TikTok")
         
         self.proxy = proxy
         self.cookies_path = Path(cookie_path) if cookie_path else None
 
         if self.cookies_path and not self.cookies_path.exists():
-            error_msg = f"Cookie file not found: {self.cookies_path}"
+            error_msg = f"Файл cookie не найден: {self.cookies_path}"
             logger.error(error_msg)
             raise CookieFileNotFoundError(error_msg, TikTokErrorCode.COOKIE_FILE_NOT_FOUND)
 
@@ -202,57 +202,57 @@ class TikTokDownloader(AbstractServiceDownloader):
             self._data: Optional[TikTokData] = None
             self._last_result: Optional[TikTokResult] = None
             
-            logger.debug("TikTok downloader initialized successfully")
+            logger.debug("Загрузчик TikTok успешно инициализирован")
 
         except Exception as e:
-            error_msg = f"Failed to initialize TikTok downloader: {e}"
+            error_msg = f"Ошибка инициализации загрузчика TikTok: {e}"
             logger.error(error_msg)
             raise Exception(error_msg) from e
 
     def _resolve_vm_url(self, url: str) -> Optional[str]:
         """
-        Resolve shortened TikTok URLs (vm.tiktok.com, vt.tiktok.com).
+        Разрешение сокращенных URL TikTok (vm.tiktok.com, vt.tiktok.com).
         
         Args:
-            url: Shortened TikTok URL
+            url: Сокращенный URL TikTok
             
         Returns:
-            Resolved URL or None if resolution fails
+            Разрешенный URL или None если разрешение не удалось
         """
-        logger.debug(f"Resolving shortened URL: {url}")
+        logger.debug(f"Разрешение сокращенного URL: {url}")
         
         try:
             extr = extractor.find(url=url)
             if not extr:
-                logger.warning(f"No extractor found for URL: {url}")
+                logger.warning(f"Экстрактор не найден для URL: {url}")
                 return None
             
             extr.initialize()
             items = list(extr.items())
             
             if not items or len(items[0]) < 2:
-                logger.warning(f"No items extracted from URL: {url}")
+                logger.warning(f"Элементы не извлечены из URL: {url}")
                 return None
                 
             resolved_url = items[0][1]
-            logger.debug(f"URL resolved to: {resolved_url}")
+            logger.debug(f"URL разрешен в: {resolved_url}")
             return resolved_url
             
         except Exception as e:
-            logger.error(f"Error resolving URL {url}: {e}")
+            logger.error(f"Ошибка разрешения URL {url}: {e}")
             return None
 
     def _classify_url(self, url: str) -> ContentType:
         """
-        Classify TikTok URL content type.
+        Классификация типа контента URL TikTok.
         
         Args:
-            url: TikTok URL to classify
+            url: URL TikTok для классификации
             
         Returns:
-            ContentType: The classified content type
+            ContentType: Классифицированный тип контента
         """
-        logger.debug(f"Classifying URL: {url}")
+        logger.debug(f"Классификация URL: {url}")
         
         try:
             parsed = urlparse(url)
@@ -274,86 +274,82 @@ class TikTokDownloader(AbstractServiceDownloader):
             else:
                 result = ContentType.UNKNOWN
                 
-            logger.debug(f"URL classified as: {result.value}")
+            logger.debug(f"URL классифицирован как: {result.value}")
             return result
         
         except Exception as e:
-            logger.error(f"URL classification error: {e}")
+            logger.error(f"Ошибка классификации URL: {e}")
             return ContentType.UNKNOWN
         
     def _validate_tiktok_url(self, url: str) -> bool:
         """
-        Validate TikTok URL.
+        Проверка валидности URL TikTok.
         
         Args:
-            url: URL to validate
+            url: URL для проверки
             
         Returns:
-            True if URL is valid TikTok URL
+            True если URL является валидным URL TikTok
         """
         try:
             parsed = urlparse(url)
             return any(domain in parsed.netloc for domain in ["tiktok.com", "vm.tiktok.com", "vt.tiktok.com"])
         except Exception as e:
-            logger.debug(f"URL validation error: {e}")
+            logger.debug(f"Ошибка проверки URL: {e}")
             return False
     
     def classify_url(self, url: str) -> Tuple[ContentType, str]:
         """
-        Classify URL and resolve shortened URLs if necessary.
+        Классификация URL и разрешение сокращенных URL при необходимости.
         
         Args:
-            url: TikTok URL to classify
+            url: URL TikTok для классификации
             
         Returns:
-            Tuple of (ContentType, resolved_url)
+            Кортеж (ContentType, resolved_url)
         """
-        logger.debug(f"Classifying and resolving URL: {url}")
+        logger.debug(f"Классификация и разрешение URL: {url}")
         
-        parsed = urlparse(url)
-        
-        if "vm.tiktok.com" in parsed.netloc or "vt.tiktok.com" in parsed.netloc:
+        if self._classify_url(url=url) == ContentType.UNKNOWN:
             resolved_url = self._resolve_vm_url(url)
             if resolved_url:
                 url = resolved_url
-                logger.info(f"Resolved shortened URL to: {url}")
+                logger.info(f"Сокращенный URL разрешен в: {url}")
             else:
-                logger.warning("Failed to resolve shortened URL")
+                logger.warning("Не удалось разрешить сокращенный URL")
                 return (ContentType.UNKNOWN, url)
         
         content_type = self._classify_url(url=url)
         return (content_type, url)
     
     def _extract_music(self, metadata: dict) -> None:
-        """Extract music information from metadata."""
+        """Извлечение информации о музыке из метаданных."""
         music = metadata.get("music")
         if music:
-            logger.debug("Extracting music information")
+            logger.debug("Извлечение информации о музыке")
             self._data.audios.append(
                 TikTokAudio(
                     id=uuid4(),
-                    url=music["playUrl"],
                     name=music["title"],
-                    cover=music.get("coverThumb"),
+                    url=music["playUrl"],
                     author=music.get("authorName"),
-                    duration=music.get("duration"),
                 )
             )
     
     def _extract_video(self, metadata: dict) -> TikTokResult:
-        """Extract video content information."""
-        logger.debug("Extracting video content")
+        """Извлечение информации о видео контенте."""
+        logger.debug("Извлечение видео контента")
         
         ydl_opts = self.ydl_opts.copy()
-        ydl_opts['listformats'] = True
+        ydl_opts["listformats"] = True
         
         with YoutubeDL(params=ydl_opts) as ydl:
             try:
                 data = ydl.extract_info(url=self._data.url, download=False)
-                logger.debug("Video info extraction completed")
+                logger.debug("Извлечение информации о видео завершено")
                 
             except ExtractorError as e:
-                error_msg = f"Video extraction error: {str(e)}"
+                error_msg = f"Ошибка извлечения видео: {str(e)}"
                 logger.error(error_msg)
                 self._last_result = TikTokResult(
                     status="error",
@@ -364,7 +360,7 @@ class TikTokDownloader(AbstractServiceDownloader):
                 return self._last_result
             
             except DownloadError as e:
-                error_msg = f"Video download error: {str(e)}"
+                error_msg = f"Ошибка загрузки видео: {str(e)}"
                 logger.error(error_msg)
                 self._last_result = TikTokResult(
                     status="error",
@@ -375,7 +371,7 @@ class TikTokDownloader(AbstractServiceDownloader):
                 return self._last_result
             
             except Exception as e:
-                error_msg = f"Unexpected video extraction error: {str(e)}"
+                error_msg = f"Неожиданная ошибка извлечения видео: {str(e)}"
                 logger.error(error_msg)
                 self._last_result = TikTokResult(
                     status="error",
@@ -384,18 +380,19 @@ class TikTokDownloader(AbstractServiceDownloader):
                     code=TikTokErrorCode.UNEXPECTED_ERROR,
                 )
                 return self._last_result
-
-        # Populate data
+            
+        # Заполнение данных
         self._data.title = data.get("title")
+        self._data.author_name = data.get("uploader")
         self._data.description = data.get("description")
 
-        # Extract video formats
+        # Извлечение видео форматов
         video_count = 0
+        audio_count = 0
         for format in data.get("formats", []):
             if (
                 format["ext"] == "mp4"
                 and format["vcodec"] == "h264"
-                and format["format_id"].endswith("-0")
             ):
                 self._data.videos.append(
                     TikTokVideo(
@@ -405,25 +402,74 @@ class TikTokDownloader(AbstractServiceDownloader):
                         fps=format.get("fps"),
                         width=format.get("width"),
                         height=format.get("height"),
-                        caption=format.get("format"),
-                        duration=data.get("duration"),
                         total_bitrate=format.get("tbr"),
                     )
                 )
                 video_count += 1
                 
-        if video_count == 0:
-            error_msg = "No supported video formats found"
+            elif (
+                format.get("ext") == "mp4" 
+                and format.get("vcodec", "").startswith("avc1")
+            ):
+                self._data.videos.append(
+                    TikTokVideo(
+                        id=uuid4(),
+                        url=format["url"],
+                        name=format["format_id"],
+                        fps=format.get("fps"),
+                        width=format.get("width"),
+                        height=format.get("height"),
+                        total_bitrate=format.get("tbr"),
+                    )
+                )
+                video_count += 1
+                
+            elif (
+                format.get("ext") == "m4a"
+                and format.get("vcodec") == "none"
+                and format.get("acodec").startswith("mp4a")
+            ):
+                self._data.audios.append(
+                    TikTokAudio(
+                        id=uuid4(),
+                        url=format["url"],
+                        name=format["format_id"],
+                    )
+                )
+                audio_count += 1
+                
+            elif (
+                format.get("ext") == "m4a"
+                and format.get("vcodec") == "none"
+                and format.get("acodec").startswith("aac")
+            ):
+                self._data.audios.append(
+                    TikTokAudio(
+                        id=uuid4(),
+                        url=format["url"],
+                        name=format["format_id"],
+                    )
+                )
+                audio_count += 1
+                
+        if audio_count == 0 and video_count == 0:
+            error_msg = "Не найдено поддерживаемых медиа форматов"
             logger.warning(error_msg)
             self._last_result = TikTokResult(
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=TikTokErrorCode.NO_VIDEO_FORMATS_FOUND,
+                code=TikTokErrorCode.NO_MEDIA_FORMATS_FOUND,
             )
             return self._last_result
         
-        # Extract thumbnails
+        if video_count == 0:
+            logger.warning("Не найдено видео форматов")
+            
+        if audio_count == 0:
+            logger.warning("Не найдено аудио форматов")
+        
+        # Извлечение миниатюр
         thumbnail_count = 0
         for thumbnail in data.get("thumbnails", []):
             self._data.thumbnails.append(
@@ -437,19 +483,20 @@ class TikTokDownloader(AbstractServiceDownloader):
             )
             thumbnail_count += 1
             
-        # Extract music
+        # Извлечение музыки
         self._extract_music(metadata=metadata)
         
-        logger.info(f"Extracted {video_count} video formats, {thumbnail_count} thumbnails")
+        logger.info(f"Извлечено {video_count} видео форматов, {thumbnail_count} миниатюр")
         self._last_result = TikTokResult(data=self._data)
         return self._last_result
     
     def _extract_photo(self, metadata: dict) -> TikTokResult:
-        """Extract photo content information."""
-        logger.debug("Extracting photo content")
+        """Извлечение информации о фото контенте."""
+        logger.debug("Извлечение фото контента")
         
         self._data.title = metadata.get("title")
         self._data.description = metadata.get("desc")
+        self._data.author_name = metadata.get("author", {}).get("uniqueId")
         
         if image_post := metadata.get("imagePost"):
             image_count = 0
@@ -458,16 +505,16 @@ class TikTokDownloader(AbstractServiceDownloader):
                     TikTokImage(
                         id=uuid4(),
                         url=image["imageURL"]["urlList"][0],
-                        name=f"{ContentType.PHOTO.value}_{image.get('imageWidth')}x{image.get('imageHeight')}_{idx}",
+                        name=f"Image_{idx}",
                         width=image.get("imageWidth"),
                         height=image.get("imageHeight"),
                     )
                 )
                 image_count += 1
-            logger.info(f"Extracted {image_count} images from photo post")
+            logger.info(f"Извлечено {image_count} изображений из фото поста")
             
         if image_count == 0:
-            error_msg = "No images found in photo post"
+            error_msg = "Изображения не найдены в фото посте"
             logger.warning(error_msg)
             self._last_result = TikTokResult(
                 status="error",
@@ -483,14 +530,14 @@ class TikTokDownloader(AbstractServiceDownloader):
     
     def _generate_safe_filename(self, url: str, video_format_id: str) -> str:
         """
-        Generate safe filename based on URL hash.
+        Генерация безопасного имени файла на основе хэша URL.
         
         Args:
-            url: Content URL
-            video_format_id: Video format ID
+            url: URL контента
+            video_format_id: ID видео формата
             
         Returns:
-            Safe filename string
+            Безопасное имя файла
         """
         hash_input = f"tiktok_{url}_{video_format_id}"
         file_hash = hashlib.sha256(hash_input.encode()).hexdigest()[:16]
@@ -498,19 +545,19 @@ class TikTokDownloader(AbstractServiceDownloader):
         
     def extract_info(self, url: str) -> TikTokResult:
         """
-        Extract media information from TikTok URL.
+        Извлечение медиа информации из URL TikTok.
         
         Args:
-            url: TikTok URL to extract information from
+            url: URL TikTok для извлечения информации
             
         Returns:
-            TikTokResult: Result containing extracted media data
+            TikTokResult: Результат, содержащий извлеченные медиа данные
         """
-        logger.info(f"Extracting info from URL: {url}")
+        logger.info(f"Извлечение информации из URL: {url}")
         
-        # Validate URL
+        # Проверка URL
         if not url or not isinstance(url, str):
-            error_msg = "Invalid URL provided"
+            error_msg = "Предоставлен неверный URL"
             logger.error(error_msg)
             self._last_result = TikTokResult(
                 status="error",
@@ -521,7 +568,7 @@ class TikTokDownloader(AbstractServiceDownloader):
             return self._last_result
         
         if not self._validate_tiktok_url(url):
-            error_msg = "Invalid or unsupported TikTok URL"
+            error_msg = "Неверный или неподдерживаемый URL TikTok"
             logger.error(error_msg)
             self._last_result = TikTokResult(
                 status="error",
@@ -531,12 +578,12 @@ class TikTokDownloader(AbstractServiceDownloader):
             )
             return self._last_result
         
-        # Classify and resolve URL
+        # Классификация и разрешение URL
         content_type, url = self.classify_url(url=url)
         self._data = TikTokData(url=url)
         
         if content_type in self.unsupported_types:
-            error_msg = f"Unsupported content type: {content_type.value}"
+            error_msg = f"Неподдерживаемый тип контента: {content_type.value}"
             logger.warning(error_msg)
             self._last_result = TikTokResult(
                 status="error",
@@ -546,10 +593,10 @@ class TikTokDownloader(AbstractServiceDownloader):
             )
             return self._last_result
             
-        # Find appropriate extractor
+        # Поиск подходящего экстрактора
         extr = extractor.find(url=url)
         if extr is None:
-            error_msg = "No extractor found for this URL"
+            error_msg = "Экстрактор не найден для данного URL"
             logger.error(error_msg)
             self._last_result = TikTokResult(
                 status="error",
@@ -564,7 +611,7 @@ class TikTokDownloader(AbstractServiceDownloader):
             extr_items = list(extr.items())
             
             if not extr_items:
-                error_msg = "No content found for this URL"
+                error_msg = "Контент не найден для данного URL"
                 logger.error(error_msg)
                 self._last_result = TikTokResult(
                     status="error",
@@ -575,10 +622,10 @@ class TikTokDownloader(AbstractServiceDownloader):
                 return self._last_result
             
             metadata = extr_items[0][-1]
-            logger.debug("Successfully extracted metadata")
+            logger.debug("Метаданные успешно извлечены")
         
         except Exception as e:
-            error_msg = f"Metadata extraction failed: {e}"
+            error_msg = f"Ошибка извлечения метаданных: {e}"
             logger.error(error_msg)
             self._last_result = TikTokResult(
                 status="error",
@@ -588,7 +635,7 @@ class TikTokDownloader(AbstractServiceDownloader):
             )
             return self._last_result
 
-        # Extract based on content type
+        # Извлечение на основе типа контента
         if content_type == ContentType.VIDEO:
             self._data.is_video = True
             return self._extract_video(metadata=metadata)
@@ -597,7 +644,7 @@ class TikTokDownloader(AbstractServiceDownloader):
             self._data.is_image = True
             return self._extract_photo(metadata=metadata)
         
-        error_msg = f"Unexpected content type: {content_type.value}"
+        error_msg = f"Неожиданный тип контента: {content_type.value}"
         logger.error(error_msg)
         return TikTokResult(
             status="error",
@@ -613,50 +660,50 @@ class TikTokDownloader(AbstractServiceDownloader):
         output_path: str = "./downloads/tiktok/",
     ) -> TikTokResult:
         """
-        Download media using previously extracted information.
+        Загрузка медиа с использованием ранее извлеченной информации.
         
         Args:
-            url: URL of the TikTok video to download
-            video_format_id: ID of the video format to download
-            output_path: Directory path for saving the downloaded file
+            url: URL видео TikTok для загрузки
+            video_format_id: ID видео формата для загрузки
+            output_path: Путь к директории для сохранения файла
             
         Returns:
-            TikTokResult: Result of the download operation
+            TikTokResult: Результат операции загрузки
             
         Raises:
-            ExtractInfoNotCalledError: If extract_info wasn't called first
+            ExtractInfoNotCalledError: Если extract_info не был вызван первым
         """
-        logger.info(f"Starting media download: url={url}, format={video_format_id}")
+        logger.info(f"Начало загрузки медиа: url={url}, format={video_format_id}")
          
-        # Prepare output directory
+        # Подготовка выходной директории
         output_dir = Path(output_path)
         output_dir.mkdir(parents=True, exist_ok=True)
         
-        # Generate safe filename
+        # Генерация безопасного имени файла
         safe_filename = self._generate_safe_filename(
             url=url,
             video_format_id=video_format_id
         )
         file_path = output_dir / f"{safe_filename}.mp4"
         
-        # Configure download options
+        # Настройка параметров загрузки
         ydl_opts = self.ydl_opts.copy()
         ydl_opts.update({
             "outtmpl": str(file_path),
-            "format": video_format_id,
+            "format": f"{video_format_id}+bestaudio[ext=m4a]",
             "merge_output_format": "mp4",
         })
         
         try:
-            logger.debug(f"Downloading to: {file_path}")
+            logger.debug(f"Загрузка в: {file_path}")
             with YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
                 
-            logger.info(f"Download completed successfully: {file_path}")
+            logger.info(f"Загрузка успешно завершена: {file_path}")
             return TikTokResult(data=TikTokData(url=url, path=file_path, is_video=True))
 
         except DownloadError as e:
-            error_msg = f"Download error: {e}"
+            error_msg = f"Ошибка загрузки: {e}"
             logger.error(error_msg)
             return TikTokResult(
                 status="error",
@@ -666,7 +713,7 @@ class TikTokDownloader(AbstractServiceDownloader):
             )
             
         except Exception as e:
-            error_msg = f"Unexpected download error: {e}"
+            error_msg = f"Неожиданная ошибка загрузки: {e}"
             logger.error(error_msg)
             return TikTokResult(
                 status="error",
@@ -677,40 +724,40 @@ class TikTokDownloader(AbstractServiceDownloader):
             
     def get_error_description(self, code: TikTokErrorCode) -> str:
         """
-        Get human-readable description for error code.
+        Получение человеко-читаемого описания для кода ошибки.
         
         Args:
-            code: Error code enum value
+            code: Значение перечисления кода ошибки
             
         Returns:
-            Description string
+            Строка описания
         """
         descriptions = {
-            TikTokErrorCode.SUCCESS: "Operation completed successfully",
-            TikTokErrorCode.INVALID_URL: "The provided TikTok URL is invalid or not supported",
-            TikTokErrorCode.EMPTY_URL: "Empty or invalid URL provided",
-            TikTokErrorCode.UNSUPPORTED_CONTENT_TYPE: "The TikTok content type is not supported",
-            TikTokErrorCode.URL_RESOLUTION_FAILED: "Failed to resolve shortened TikTok URL",
-            TikTokErrorCode.CONNECTION_ERROR: "Network connection error occurred",
-            TikTokErrorCode.DOWNLOAD_ERROR: "Media download failed",
-            TikTokErrorCode.EXTRACTOR_ERROR: "Media extraction failed",
-            TikTokErrorCode.PROXY_ERROR: "Proxy connection error",
-            TikTokErrorCode.NO_EXTRACTOR_FOUND: "No suitable extractor found for the URL",
-            TikTokErrorCode.NO_CONTENT_FOUND: "No content found for the URL",
-            TikTokErrorCode.METADATA_EXTRACTION_FAILED: "Failed to extract metadata",
-            TikTokErrorCode.VIDEO_EXTRACTION_FAILED: "Video content extraction failed",
-            TikTokErrorCode.PHOTO_EXTRACTION_FAILED: "Photo content extraction failed",
-            TikTokErrorCode.MUSIC_EXTRACTION_FAILED: "Music extraction failed",
-            TikTokErrorCode.NO_VIDEO_FORMATS_FOUND: "No supported video formats found",
-            TikTokErrorCode.NO_IMAGES_FOUND: "No images found in photo post",
-            TikTokErrorCode.NO_THUMBNAILS_FOUND: "No thumbnails found",
-            TikTokErrorCode.COOKIE_FILE_NOT_FOUND: "Cookie file not found",
-            TikTokErrorCode.OUTPUT_PATH_ERROR: "Output path error",
-            TikTokErrorCode.FILE_WRITE_ERROR: "File write error",
-            TikTokErrorCode.UNEXPECTED_ERROR: "An unexpected error occurred",
-            TikTokErrorCode.INITIALIZATION_ERROR: "Failed to initialize downloader",
-            TikTokErrorCode.EXTRACT_INFO_NOT_CALLED: "extract_info() must be called before download",
-            TikTokErrorCode.GALLERY_DL_ERROR: "gallery-dl internal error occurred",
-            TikTokErrorCode.YT_DLP_ERROR: "yt-dlp internal error occurred",
+            TikTokErrorCode.SUCCESS: "Операция успешно завершена",
+            TikTokErrorCode.INVALID_URL: "Предоставленный URL TikTok неверен или не поддерживается",
+            TikTokErrorCode.EMPTY_URL: "Предоставлен пустой или неверный URL",
+            TikTokErrorCode.UNSUPPORTED_CONTENT_TYPE: "Тип контента TikTok не поддерживается",
+            TikTokErrorCode.URL_RESOLUTION_FAILED: "Не удалось разрешить сокращенный URL TikTok",
+            TikTokErrorCode.CONNECTION_ERROR: "Произошла ошибка сетевого соединения",
+            TikTokErrorCode.DOWNLOAD_ERROR: "Не удалось загрузить медиа",
+            TikTokErrorCode.EXTRACTOR_ERROR: "Не удалось извлечь медиа",
+            TikTokErrorCode.PROXY_ERROR: "Ошибка подключения к прокси",
+            TikTokErrorCode.NO_EXTRACTOR_FOUND: "Не найден подходящий экстрактор для URL",
+            TikTokErrorCode.NO_CONTENT_FOUND: "Контент не найден для данного URL",
+            TikTokErrorCode.METADATA_EXTRACTION_FAILED: "Не удалось извлечь метаданные",
+            TikTokErrorCode.VIDEO_EXTRACTION_FAILED: "Не удалось извлечь видео контент",
+            TikTokErrorCode.PHOTO_EXTRACTION_FAILED: "Не удалось извлечь фото контент",
+            TikTokErrorCode.MUSIC_EXTRACTION_FAILED: "Не удалось извлечь музыку",
+            TikTokErrorCode.NO_MEDIA_FORMATS_FOUND: "Не найдено поддерживаемых медиа форматов",
+            TikTokErrorCode.NO_IMAGES_FOUND: "Изображения не найдены в фото посте",
+            TikTokErrorCode.NO_THUMBNAILS_FOUND: "Миниатюры не найдены",
+            TikTokErrorCode.COOKIE_FILE_NOT_FOUND: "Файл cookie не найден",
+            TikTokErrorCode.OUTPUT_PATH_ERROR: "Ошибка выходного пути",
+            TikTokErrorCode.FILE_WRITE_ERROR: "Ошибка записи файла",
+            TikTokErrorCode.UNEXPECTED_ERROR: "Произошла непредвиденная ошибка",
+            TikTokErrorCode.INITIALIZATION_ERROR: "Не удалось инициализировать загрузчик",
+            TikTokErrorCode.EXTRACT_INFO_NOT_CALLED: "extract_info() должен быть вызван перед загрузкой",
+            TikTokErrorCode.GALLERY_DL_ERROR: "Произошла внутренняя ошибка gallery-dl",
+            TikTokErrorCode.YT_DLP_ERROR: "Произошла внутренняя ошибка yt-dlp",
         }
-        return descriptions.get(code, "Unknown error")
+        return descriptions.get(code, "Неизвестная ошибка")

@@ -12,35 +12,32 @@ class AbstractServiceImageTypeDict(TypedDict):
     name: str
     width: NotRequired[Optional[int]]
     height: NotRequired[Optional[int]]
-    caption: NotRequired[Optional[str]]
 
 
 @dataclass
 class AbstractServiceImage(ABC):
     """
-    Abstract base class representing an image in a service.
+    Базовый абстрактный класс, описывающий изображение в сервисе.
     
-    Attributes:
-        id: Unique identifier for the image
-        url: Direct URL to the image resource
-        name: Display name or filename of the image
-        width: Width of the image in pixels (optional)
-        height: Height of the image in pixels (optional)
-        caption: Descriptive caption for the image (optional)
+    Атрибуты:
+        id: Уникальный идентификатор изображения
+        url: Прямая ссылка на изображение
+        name: Имя файла или отображаемое название изображения
+        width: Ширина изображения в пикселях (опционально)
+        height: Высота изображения в пикселях (опционально)
     """
     id: str
     url: str
     name: str
     width: Optional[int] = None
     height: Optional[int] = None
-    caption: Optional[str] = None
     
     def to_dict(self) -> AbstractServiceImageTypeDict:
         """
-        Convert the image instance to a dictionary representation.
+        Преобразует объект изображения в словарь.
         
-        Returns:
-            Dictionary containing all image attributes
+        Возвращает:
+            Словарь со всеми атрибутами изображения
         """
         return {
             "id": str(self.id),
@@ -48,7 +45,6 @@ class AbstractServiceImage(ABC):
             "name": self.name,
             "width": self.width,
             "height": self.height,
-            "caption": self.caption
         }
     
 
@@ -58,63 +54,47 @@ class AbstractServiceVideoTypeDict(TypedDict):
     url: str
     name: str
     fps: NotRequired[Optional[int]]
-    cover: NotRequired[Optional[str]]
     width: NotRequired[Optional[int]]
     height: NotRequired[Optional[int]]
-    caption: NotRequired[Optional[str]]
-    duration: NotRequired[Optional[int]]
-    thumbnail: NotRequired[Optional[str]]
     total_bitrate: NotRequired[Optional[int]]
 
 
 @dataclass
 class AbstractServiceVideo(ABC):
     """
-    Abstract base class representing a video in a service.
+    Базовый абстрактный класс, описывающий видео в сервисе.
     
-    Attributes:
-        id: Unique identifier for the video
-        url: Direct URL to the video resource
-        name: Display name or filename of the video
-        fps: Frames per second of the video (optional)
-        cover: URL to video cover image (optional)
-        width: Width of the video in pixels (optional)
-        height: Height of the video in pixels (optional)
-        caption: Descriptive caption for the video (optional)
-        duration: Duration of the video in seconds (optional)
-        thumbnail: URL to video thumbnail (optional)
-        total_bitrate: Total bitrate of the video in kbps (optional)
+    Атрибуты:
+        id: Уникальный идентификатор видео
+        url: Прямая ссылка на видео
+        name: Имя файла или отображаемое название видео
+        fps: Количество кадров в секунду (опционально)
+        width: Ширина видео в пикселях (опционально)
+        height: Высота видео в пикселях (опционально)
+        total_bitrate: Общий битрейт видео в kbps (опционально)
     """
     id: str
     url: str
     name: str
     fps: Optional[int] = None
-    cover: Optional[str] = None
     width: Optional[int] = None
     height: Optional[int] = None
-    caption: Optional[str] = None
-    duration: Optional[int] = None
-    thumbnail: Optional[str] = None
     total_bitrate: Optional[int] = None
     
     def to_dict(self) -> AbstractServiceVideoTypeDict:
         """
-        Convert the video instance to a dictionary representation.
+        Преобразует объект видео в словарь.
         
-        Returns:
-            Dictionary containing all video attributes
+        Возвращает:
+            Словарь со всеми атрибутами видео
         """
         return {
             "id": str(self.id),
             "url": self.url,
             "name": self.name,
             "fps": self.fps,
-            "cover": self.cover,
             "width": self.width,
             "height": self.height,
-            "caption": self.caption,
-            "duration": self.duration,
-            "thumbnail": self.thumbnail,
             "total_bitrate": self.total_bitrate,
         }
     
@@ -124,52 +104,40 @@ class AbstractServiceAudioTypeDict(TypedDict):
     id: str
     url: str
     name: str
-    cover: NotRequired[Optional[str]]
     author: NotRequired[Optional[str]]
-    caption: NotRequired[Optional[str]]
-    duration: NotRequired[Optional[str]]
     total_bitrate: NotRequired[Optional[int]]
 
 
 @dataclass
 class AbstractServiceAudio(ABC):
     """
-    Abstract base class representing an audio file in a service.
+    Базовый абстрактный класс, описывающий аудиофайл в сервисе.
     
-    Attributes:
-        id: Unique identifier for the audio
-        url: Direct URL to the audio resource
-        name: Display name or filename of the audio
-        cover: URL to audio cover image (optional)
-        author: Author or artist of the audio (optional)
-        caption: Descriptive caption for the audio (optional)
-        duration: Duration of the audio (format varies by service) (optional)
-        total_bitrate: Total bitrate of the audio in kbps (optional)
+    Атрибуты:
+        id: Уникальный идентификатор аудио
+        url: Прямая ссылка на аудио
+        name: Имя файла или отображаемое название
+        author: Автор или исполнитель (опционально)
+        total_bitrate: Общий битрейт аудио в kbps (опционально)
     """
     id: str
     url: str
     name: str
-    cover: Optional[str] = None
     author: Optional[str] = None
-    caption: Optional[str] = None
-    duration: Optional[str] = None
     total_bitrate: Optional[int] = None
     
     def to_dict(self) -> AbstractServiceAudioTypeDict:
         """
-        Convert the audio instance to a dictionary representation.
+        Преобразует объект аудио в словарь.
         
-        Returns:
-            Dictionary containing all audio attributes
+        Возвращает:
+            Словарь со всеми атрибутами аудио
         """
         return {
             "id": str(self.id),
             "url": self.url,
             "name": self.name,
-            "cover": self.cover,
             "author": self.author,
-            "caption": self.caption,
-            "duration": self.duration,
             "total_bitrate": self.total_bitrate,
         }
         
@@ -179,37 +147,40 @@ class AbstractServiceDataTypeDict(TypedDict):
     url: str
     is_video: bool
     is_image: bool
-    path: NotRequired[Optional[Path]]
+    path: NotRequired[Optional[str]]
     title: NotRequired[Optional[str]]
+    author_name: NotRequired[Optional[str]]
     description: NotRequired[Optional[str]]
     videos: List[AbstractServiceVideoTypeDict]
     images: List[AbstractServiceImageTypeDict]
     audios: List[AbstractServiceAudioTypeDict]
     thumbnails: List[AbstractServiceImageTypeDict]
-
+    
 
 @dataclass
 class AbstractServiceData(ABC):
     """
-    Abstract base class representing collected data from a service.
+    Базовый абстрактный класс, представляющий данные, собранные из сервиса.
     
-    Attributes:
-        url: Original URL that was processed
-        is_video: Flag indicating if the content is primarily video
-        is_image: Flag indicating if the content is primarily image
-        path: Local filesystem path where content is stored (optional)
-        title: Title of the content (optional)
-        description: Description of the content (optional)
-        videos: List of video objects found in the content
-        images: List of image objects found in the content
-        audios: List of audio objects found in the content
-        thumbnails: List of thumbnail images for the content
+    Атрибуты:
+        url: Исходный URL, который был обработан
+        author_name: Имя автора или владельца контента
+        is_video: Флаг, указывающий, что контент — это видео
+        is_image: Флаг, указывающий, что контент — это изображение
+        path: Локальный путь к файлу (опционально)
+        title: Заголовок контента (опционально)
+        description: Описание контента (опционально)
+        videos: Список объектов видео
+        images: Список объектов изображений
+        audios: Список объектов аудио
+        thumbnails: Список превью-изображений
     """
     url: str
     is_video: bool = False
     is_image: bool = False
-    path: Optional[Path] = None
+    path: Optional[str] = None
     title: Optional[str] = None
+    author_name: Optional[str] = None
     description: Optional[str] = None
     videos: List[AbstractServiceVideo] = field(default_factory=list)
     images: List[AbstractServiceImage] = field(default_factory=list)
@@ -218,13 +189,14 @@ class AbstractServiceData(ABC):
     
     def to_dict(self) -> AbstractServiceDataTypeDict:
         """
-        Convert the data instance to a dictionary representation.
+        Преобразует объект данных в словарь.
         
-        Returns:
-            Dictionary containing all data attributes with nested objects converted to dicts
+        Возвращает:
+            Словарь со всеми атрибутами данных (вложенные объекты также преобразуются в словари)
         """
         return {
             "url": self.url,
+            "author_name": self.author_name,
             "is_video": self.is_video,
             "is_image": self.is_image,
             "path": self.path,
@@ -239,10 +211,10 @@ class AbstractServiceData(ABC):
 
 class AbstractServiceErrorCode(Enum):
     """
-    Abstract base enum for service error codes.
+    Базовый класс для кодов ошибок сервиса.
     
-    This enum should be extended by specific service implementations
-    to define their own error codes.
+    Этот enum должен быть расширен конкретными реализациями сервисов,
+    чтобы задавать свои собственные коды ошибок.
     """
     SUCCESS = "SUCCESS"
     UNEXPECTED_ERROR = "UNEXPECTED_ERROR"
@@ -259,13 +231,13 @@ class AbstractServiceResultTypeDict(TypedDict):
 @dataclass
 class AbstractServiceResult(ABC):
     """
-    Abstract base class representing the result of a service operation.
+    Базовый абстрактный класс, представляющий результат выполнения операции сервиса.
     
-    Attributes:
-        status: Operation status - either "success" or "error"
-        context: Additional context or error message (optional)
-        code: Error code indicating the specific result type
-        data: Extracted data from the service (optional)
+    Атрибуты:
+        status: Статус операции — "success" или "error"
+        context: Дополнительное описание ошибки или контекста (опционально)
+        code: Код ошибки, указывающий на конкретный результат
+        data: Извлечённые данные (опционально)
     """
     status: Literal["success", "error"] = "success"
     context: Optional[str] = None
@@ -274,10 +246,10 @@ class AbstractServiceResult(ABC):
     
     def to_dict(self) -> AbstractServiceResultTypeDict:
         """
-        Convert the result instance to a dictionary representation.
+        Преобразует объект результата в словарь.
         
-        Returns:
-            Dictionary containing result status, context, code, and data
+        Возвращает:
+            Словарь со статусом, контекстом, кодом и данными
         """
         return {
             "status": self.status,
@@ -289,34 +261,35 @@ class AbstractServiceResult(ABC):
 
 class AbstractServiceDownloader(ABC):
     """
-    Abstract base class for service downloaders.
+    Базовый абстрактный класс для загрузчиков из сервисов.
     
-    This class defines the interface that all service-specific downloaders
-    must implement to provide consistent media extraction functionality.
+    Определяет интерфейс, который должны реализовать конкретные загрузчики,
+    чтобы предоставлять единый способ извлечения медиа-данных.
     """
     
     @abstractmethod
     def extract_info(self, url: str) -> AbstractServiceResult:
         """
-        Extract media information from a URL without downloading.
+        Извлекает информацию о медиа по URL без загрузки файлов.
         
-        Args:
-            url: The URL to extract information from
+        Аргументы:
+            url: Ссылка для извлечения информации
             
-        Returns:
-            ServiceResult containing extracted media information
+        Возвращает:
+            AbstractServiceResult с собранными данными
         """
         pass
         
     # @abstractmethod
     # def download_media(self, url: str) -> AbstractServiceResult:
     #     """
-    #     Download media from a URL and return information about downloaded files.
+    #     Загружает медиа по указанному URL и возвращает информацию о загруженных файлах.
         
-    #     Args:
-    #         url: The URL to download media from
-            
-    #     Returns:
-    #         ServiceResult containing information about downloaded files
+    #     Аргументы:
+    #         url: Ссылка для загрузки медиа
+        
+    #     Возвращает:
+    #         AbstractServiceResult с информацией о загруженных файлах
     #     """
     #     pass
+

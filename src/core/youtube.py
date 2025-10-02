@@ -1,8 +1,8 @@
 """
-YouTube downloader module.
+Модуль загрузчика YouTube.
 
-This module provides functionality to download media content from YouTube,
-including videos, audios, and thumbnails.
+Этот модуль предоставляет функциональность для загрузки медиа-контента с YouTube,
+включая видео, аудио и миниатюры.
 """
 
 import hashlib
@@ -27,40 +27,40 @@ from .abstractions import (
 )
 
 
-# Setup logging
+# Настройка логирования
 logger = logging.getLogger("youtube")
 
 
-# ======= EnumsClasses =======
+# ======= Перечисления =======
 class ContentType(Enum):
-    """Enum representing different YouTube content types."""
+    """Перечисление, представляющее различные типы контента YouTube."""
     POST = "post"
     LIVE = "live"
     VIDEO = "video"
     SHORTS = "shorts"
-    PLAYLIST = "playlist"
     ACCOUNT = "account"
+    PLAYLIST = "playlist"
     
     
 class YoutubeErrorCode(Enum):
-    """Enum representing error codes for YouTube operations."""
+    """Перечисление, представляющее коды ошибок для операций с YouTube."""
     
-    # Success
+    # Успех
     SUCCESS = "SUCCESS"
     
-    # Input validation errors (1xx)
+    # Ошибки проверки входных данных (1xx)
     INVALID_URL = "INVALID_URL"
     EMPTY_URL = "EMPTY_URL"
     UNSUPPORTED_CONTENT_TYPE = "UNSUPPORTED_CONTENT_TYPE"
     UNSUPPORTED_MEDIA_TYPE = "UNSUPPORTED_MEDIA_TYPE"
     
-    # Network errors (2xx)
+    # Сетевые ошибки (2xx)
     CONNECTION_ERROR = "CONNECTION_ERROR"
     DOWNLOAD_ERROR = "DOWNLOAD_ERROR"
     EXTRACTOR_ERROR = "EXTRACTOR_ERROR"
     PROXY_ERROR = "PROXY_ERROR"
     
-    # Content errors (3xx)
+    # Ошибки контента (3xx)
     LIVE_STREAM_NOT_SUPPORTED = "LIVE_STREAM_NOT_SUPPORTED"
     PLAYLIST_NOT_SUPPORTED = "PLAYLIST_NOT_SUPPORTED"
     ACCOUNT_NOT_SUPPORTED = "ACCOUNT_NOT_SUPPORTED"
@@ -71,12 +71,12 @@ class YoutubeErrorCode(Enum):
     NO_THUMBNAILS_FOUND = "NO_THUMBNAILS_FOUND"
     NO_MEDIA_FORMATS_FOUND = "NO_MEDIA_FORMATS_FOUND"
     
-    # File system errors (4xx)
+    # Ошибки файловой системы (4xx)
     COOKIE_FILE_NOT_FOUND = "COOKIE_FILE_NOT_FOUND"
     OUTPUT_PATH_ERROR = "OUTPUT_PATH_ERROR"
     FILE_WRITE_ERROR = "FILE_WRITE_ERROR"
     
-    # System errors (5xx)
+    # Системные ошибки (5xx)
     UNEXPECTED_ERROR = "UNEXPECTED_ERROR"
     INITIALIZATION_ERROR = "INITIALIZATION_ERROR"
     EXTRACT_INFO_NOT_CALLED = "EXTRACT_INFO_NOT_CALLED"
@@ -86,37 +86,37 @@ class YoutubeErrorCode(Enum):
 # ======= DataClasses =======
 @dataclass
 class YoutubeData(AbstractServiceData):
-    """Container for YouTube media data."""
+    """Контейнер для данных медиа с YouTube."""
     pass
 
 
 @dataclass
 class YoutubeImage(AbstractServiceImage):
-    """Represents a YouTube thumbnail image."""
+    """Представляет миниатюру YouTube."""
     pass
 
 
 @dataclass
 class YoutubeVideo(AbstractServiceVideo):
-    """Represents a YouTube video format."""
+    """Представляет видео формат YouTube."""
     pass
 
 
 @dataclass
 class YoutubeAudio(AbstractServiceAudio):
-    """Represents a YouTube audio format."""
+    """Представляет аудио формат YouTube."""
     pass
 
 
 @dataclass
 class YoutubeResult(AbstractServiceResult):
-    """Result of YouTube operations."""
+    """Результат операций с YouTube."""
     code: YoutubeErrorCode = field(default=YoutubeErrorCode.SUCCESS)
 
 
 # ======= ExceptionClasses =======
 class ExtractInfoNotCalledError(Exception):
-    """Exception raised when download is attempted before extract_info."""
+    """Исключение при попытке загрузки до вызова extract_info."""
     def __init__(self, message: str, code: YoutubeErrorCode = YoutubeErrorCode.EXTRACT_INFO_NOT_CALLED):
         super().__init__(message)
         self.code = code
@@ -124,7 +124,7 @@ class ExtractInfoNotCalledError(Exception):
 
 
 class CookieFileNotFoundError(FileNotFoundError):
-    """Exception raised when cookie file is not found."""
+    """Исключение при отсутствии файла cookie."""
     def __init__(self, message: str, code: YoutubeErrorCode = YoutubeErrorCode.COOKIE_FILE_NOT_FOUND):
         super().__init__(message)
         self.code = code
@@ -132,7 +132,7 @@ class CookieFileNotFoundError(FileNotFoundError):
 
 
 class UnsupportedContentTypeError(Exception):
-    """Exception raised for unsupported content types."""
+    """Исключение для неподдерживаемых типов контента."""
     def __init__(self, message: str, code: YoutubeErrorCode = YoutubeErrorCode.UNSUPPORTED_CONTENT_TYPE):
         super().__init__(message)
         self.code = code
@@ -142,10 +142,10 @@ class UnsupportedContentTypeError(Exception):
 # ======= MainClass =======
 class YoutubeDownloader(AbstractServiceDownloader):
     """
-    YouTube media downloader.
+    Загрузчик медиа-контента с YouTube.
     
-    Supports downloading videos, audios, and thumbnails from YouTube.
-    Handles various content types including shorts and regular videos.
+    Поддерживает загрузку видео, аудио и миниатюр с YouTube.
+    Обрабатывает различные типы контента, включая shorts и обычные видео.
     """
     
     def __init__(
@@ -156,21 +156,21 @@ class YoutubeDownloader(AbstractServiceDownloader):
         concurrent_download_count: int = 2,
     ) -> None:
         """
-        Initialize YouTube downloader.
+        Инициализация загрузчика YouTube.
         
         Args:
-            retries_count: Number of retry attempts for downloads
-            proxy: Proxy server URL (optional)
-            cookie_path: Path to cookies file (optional)
-            concurrent_download_count: Number of concurrent fragment downloads
+            retries_count: Количество попыток повтора для загрузок
+            proxy: URL прокси-сервера (опционально)
+            cookie_path: Путь к файлу cookies (опционально)
+            concurrent_download_count: Количество одновременных загрузок фрагментов
         """
-        logger.info("Initializing YouTube downloader")
+        logger.info("Инициализация загрузчика YouTube")
         
         self.proxy = proxy
         self.cookies_path = Path(cookie_path) if cookie_path else None
 
         if self.cookies_path and not self.cookies_path.exists():
-            error_msg = f"Cookie file not found: {self.cookies_path}"
+            error_msg = f"Файл cookie не найден: {self.cookies_path}"
             logger.error(error_msg)
             raise CookieFileNotFoundError(error_msg, YoutubeErrorCode.COOKIE_FILE_NOT_FOUND)
 
@@ -201,24 +201,24 @@ class YoutubeDownloader(AbstractServiceDownloader):
             self._data: Optional[YoutubeData] = None
             self._last_result: Optional[YoutubeResult] = None
             
-            logger.debug("YouTube downloader initialized successfully")
+            logger.debug("Загрузчик YouTube успешно инициализирован")
             
         except Exception as e:
-            error_msg = f"Failed to initialize YouTube downloader: {e}"
+            error_msg = f"Ошибка инициализации загрузчика YouTube: {e}"
             logger.error(error_msg)
             raise Exception(error_msg) from e
         
     def _classify_url(self, url: str) -> ContentType:
         """
-        Classify YouTube URL content type.
+        Классификация типа контента URL YouTube.
         
         Args:
-            url: YouTube URL to classify
+            url: URL YouTube для классификации
             
         Returns:
-            ContentType: The classified content type
+            ContentType: Классифицированный тип контента
         """
-        logger.debug(f"Classifying URL: {url}")
+        logger.debug(f"Классификация URL: {url}")
         
         try:
             parsed = urlparse(url=url)
@@ -238,45 +238,45 @@ class YoutubeDownloader(AbstractServiceDownloader):
             else:
                 result = ContentType.VIDEO
                 
-            logger.debug(f"URL classified as: {result.value}")
+            logger.debug(f"URL классифицирован как: {result.value}")
             return result
         
         except Exception as e:
-            logger.error(f"URL classification error: {e}")
+            logger.error(f"Ошибка классификации URL: {e}")
             return None
         
     def _validate_youtube_url(self, url: str) -> bool:
         """
-        Validate YouTube URL.
+        Проверка валидности URL YouTube.
         
         Args:
-            url: URL to validate
+            url: URL для проверки
             
         Returns:
-            True if URL is valid YouTube URL
+            True если URL является валидным URL YouTube
         """
         try:
             parsed = urlparse(url)
             return any(domain in parsed.netloc for domain in ["youtube.com", "youtu.be", "www.youtube.com"])
         except Exception as e:
-            logger.debug(f"URL validation error: {e}")
+            logger.debug(f"Ошибка проверки URL: {e}")
             return False
         
     def extract_info(self, url: str) -> YoutubeResult:
         """
-        Extract media information from YouTube URL.
+        Извлечение медиа информации из URL YouTube.
         
         Args:
-            url: YouTube URL to extract information from
+            url: URL YouTube для извлечения информации
             
         Returns:
-            YoutubeResult: Result containing extracted media data
+            YoutubeResult: Результат, содержащий извлеченные медиа данные
         """
-        logger.info(f"Extracting info from URL: {url}")
+        logger.info(f"Извлечение информации из URL: {url}")
         
-        # Validate URL
+        # Проверка URL
         if not url or not isinstance(url, str):
-            error_msg = "Invalid URL provided"
+            error_msg = "Предоставлен неверный URL"
             logger.error(error_msg)
             self._last_result = YoutubeResult(
                 status="error",
@@ -287,7 +287,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
             return self._last_result
             
         if not self._validate_youtube_url(url):
-            error_msg = "Invalid or unsupported YouTube URL"
+            error_msg = "Неверный или неподдерживаемый URL YouTube"
             logger.error(error_msg)
             self._last_result = YoutubeResult(
                 status="error",
@@ -302,10 +302,10 @@ class YoutubeDownloader(AbstractServiceDownloader):
         
         self._data = YoutubeData(url=url) 
         
-        # Classify content type
+        # Классификация типа контента
         content_type = self._classify_url(url=url)
         if not content_type:
-            error_msg = "Could not classify URL content type"
+            error_msg = "Не удалось классифицировать тип контента URL"
             logger.error(error_msg)
             self._last_result = YoutubeResult(
                 status="error",
@@ -316,7 +316,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
             return self._last_result
 
         if content_type in self.unsupported_types:
-            error_msg = f"Unsupported content type: {content_type.value}"
+            error_msg = f"Неподдерживаемый тип контента: {content_type.value}"
             logger.warning(error_msg)
             self._last_result = YoutubeResult(
                 status="error",
@@ -326,15 +326,15 @@ class YoutubeDownloader(AbstractServiceDownloader):
             )
             return self._last_result
         
-        # Extract information using yt-dlp   
+        # Извлечение информации с помощью yt-dlp   
         with YoutubeDL(params=ydl_opts) as ydl:
             try:
-                logger.debug("Starting info extraction with yt-dlp")
+                logger.debug("Начало извлечения информации с yt-dlp")
                 data = ydl.extract_info(url=url, download=False)
-                logger.debug("Info extraction completed successfully")
+                logger.debug("Извлечение информации успешно завершено")
                 
             except ExtractorError as e:
-                error_msg = f"Extraction error: {str(e)}"
+                error_msg = f"Ошибка извлечения: {str(e)}"
                 logger.error(error_msg)
                 self._last_result = YoutubeResult(
                     status="error",
@@ -345,7 +345,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                 return self._last_result
             
             except DownloadError as e:
-                error_msg = f"Download error during extraction: {str(e)}"
+                error_msg = f"Ошибка загрузки при извлечении: {str(e)}"
                 logger.error(error_msg)
                 self._last_result = YoutubeResult(
                     status="error",
@@ -356,7 +356,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                 return self._last_result
             
             except Exception as e:
-                error_msg = f"Unexpected error during extraction: {str(e)}"
+                error_msg = f"Неожиданная ошибка при извлечении: {str(e)}"
                 logger.error(error_msg)
                 self._last_result = YoutubeResult(
                     status="error",
@@ -366,20 +366,20 @@ class YoutubeDownloader(AbstractServiceDownloader):
                 )
                 return self._last_result
             
-        # Check for unsupported content types in extracted data
+        # Проверка неподдерживаемых типов контента в извлеченных данных
         if data.get("is_live") == True:
-            error_msg = "Live streams are not supported"
+            error_msg = "Прямые трансляции не поддерживаются"
             logger.warning(error_msg)
             self._last_result = YoutubeResult(
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=YoutubeErrorCode.LIVE_STREAM_NOT_SUPPORTE,
+                code=YoutubeErrorCode.LIVE_STREAM_NOT_SUPPORTED,
             )
             return self._last_result
         
         if data.get("_type") == "playlist":
-            error_msg = "Playlists are not supported"
+            error_msg = "Плейлисты не поддерживаются"
             logger.warning(error_msg)
             self._last_result = YoutubeResult(
                 status="error",
@@ -390,43 +390,29 @@ class YoutubeDownloader(AbstractServiceDownloader):
             return self._last_result
         
         if data.get("media_type") == "livestream":
-            error_msg = "Livestreams are not supported"
+            error_msg = "Прямые эфиры не поддерживаются"
             logger.warning(error_msg)
             self._last_result = YoutubeResult(
                 status="error",
                 data=self._data,
                 context=error_msg,
-                code=YoutubeErrorCode.LIVE_STREAM_NOT_SUPPORTE,
+                code=YoutubeErrorCode.LIVE_STREAM_NOT_SUPPORTED,
             )
             return self._last_result
             
-        # Populate data object
+        # Заполнение объекта данных
         self._data.is_video = True
         self._data.title = data.get("title")
+        self._data.author_name = data.get("uploader")
         self._data.description = data.get("description")
 
-        # Extract audio and video formats
-        audio_count = 0
+        # Извлечение видео форматов
         video_count = 0
+        audio_count = 0
         for format in data.get("formats", []):
             if (
-                format.get("ext") == "m4a"
-                and format.get("vcodec") == "none"
-                and format.get("acodec").startswith("mp4a")
-            ):
-                self._data.audios.append(
-                    YoutubeAudio(
-                        id=uuid4(),
-                        url=format["url"],
-                        name=format["format_id"],
-                        caption=format.get("format"),
-                    )
-                )
-                audio_count += 1
-            
-            elif (
-                format.get("ext") == "mp4" 
-                and format.get("vcodec").startswith("avc1")
+                format["ext"] == "mp4"
+                and format["vcodec"] == "h264"
             ):
                 self._data.videos.append(
                     YoutubeVideo(
@@ -436,16 +422,58 @@ class YoutubeDownloader(AbstractServiceDownloader):
                         fps=format.get("fps"),
                         width=format.get("width"),
                         height=format.get("height"),
-                        caption=format.get("format"),
-                        duration=data.get("duration"),
                         total_bitrate=format.get("tbr"),
                     )
                 )
                 video_count += 1
                 
-        # Check if any formats were found
+            elif (
+                format.get("ext") == "mp4" 
+                and format.get("vcodec", "").startswith("avc1")
+            ):
+                self._data.videos.append(
+                    YoutubeVideo(
+                        id=uuid4(),
+                        url=format["url"],
+                        name=format["format_id"],
+                        fps=format.get("fps"),
+                        width=format.get("width"),
+                        height=format.get("height"),
+                        total_bitrate=format.get("tbr"),
+                    )
+                )
+                video_count += 1
+                
+            elif (
+                format.get("ext") == "m4a"
+                and format.get("vcodec") == "none"
+                and format.get("acodec").startswith("mp4a")
+            ):
+                self._data.audios.append(
+                    YoutubeAudio(
+                        id=uuid4(),
+                        url=format["url"],
+                        name=format["format_id"],
+                    )
+                )
+                audio_count += 1
+                
+            elif (
+                format.get("ext") == "m4a"
+                and format.get("vcodec") == "none"
+                and format.get("acodec").startswith("aac")
+            ):
+                self._data.audios.append(
+                    YoutubeAudio(
+                        id=uuid4(),
+                        url=format["url"],
+                        name=format["format_id"],
+                    )
+                )
+                audio_count += 1
+                
         if audio_count == 0 and video_count == 0:
-            error_msg = "No supported media formats found"
+            error_msg = "Не найдено поддерживаемых медиа форматов"
             logger.warning(error_msg)
             self._last_result = YoutubeResult(
                 status="error",
@@ -456,12 +484,12 @@ class YoutubeDownloader(AbstractServiceDownloader):
             return self._last_result
         
         if video_count == 0:
-            logger.warning("No video formats found")
+            logger.warning("Не найдено видео форматов")
             
         if audio_count == 0:
-            logger.warning("No audio formats found")
+            logger.warning("Не найдено аудио форматов")
         
-        # Extract thumbnails
+        # Извлечение миниатюр
         thumbnail_count = 0 
         for thumbnail in data.get("thumbnails", []):
             if (
@@ -480,23 +508,23 @@ class YoutubeDownloader(AbstractServiceDownloader):
                 thumbnail_count += 1
                 
         if thumbnail_count == 0:
-            logger.warning("No thumbnails found")
+            logger.warning("Миниатюры не найдены")
                 
-        logger.info(f"Extracted {video_count} videos, {audio_count} audios, {thumbnail_count} thumbnails")
-        
+        logger.info(f"Извлечено {video_count} видео, {audio_count} аудио, {thumbnail_count} миниатюр")
+            
         self._last_result = YoutubeResult(data=self._data)
         return self._last_result
     
     def _generate_safe_filename(self, url: str, video_format_id: str) -> str:
         """
-        Generate safe filename based on URL hash.
+        Генерация безопасного имени файла на основе хэша URL.
         
         Args:
-            url: Content URL
-            video_format_id: Video format ID
+            url: URL контента
+            video_format_id: ID видео формата
             
         Returns:
-            Safe filename string
+            Безопасное имя файла
         """
         hash_input = f"youtube_{url}_{video_format_id}"
         file_hash = hashlib.sha256(hash_input.encode()).hexdigest()[:16]
@@ -509,33 +537,33 @@ class YoutubeDownloader(AbstractServiceDownloader):
         output_path: str = "./downloads/youtube/",
     ) -> YoutubeResult:
         """
-        Download media using previously extracted information.
+        Загрузка медиа с использованием ранее извлеченной информации.
         
         Args:
-            url: URL of the video to download
-            video_format_id: ID of the video format to download
-            output_path: Directory path for saving the downloaded file
+            url: URL видео для загрузки
+            video_format_id: ID видео формата для загрузки
+            output_path: Путь к директории для сохранения файла
             
         Returns:
-            YoutubeResult: Result of the download operation
+            YoutubeResult: Результат операции загрузки
             
         Raises:
-            ExtractInfoNotCalledError: If extract_info wasn't called first
+            ExtractInfoNotCalledError: Если extract_info не был вызван первым
         """
-        logger.info(f"Starting media download: url={url}, video_format={video_format_id}")
+        logger.info(f"Начало загрузки медиа: url={url}, video_format={video_format_id}")
           
-        # Prepare output directory
+        # Подготовка выходной директории
         output_dir = Path(output_path)
         output_dir.mkdir(parents=True, exist_ok=True)
         
-        # Create safe filename
+        # Создание безопасного имени файла
         safe_filename = self._generate_safe_filename(
             url=url,
             video_format_id=video_format_id,
         )
         file_path = output_dir / f"{safe_filename}.mp4"
         
-        # Configure download options
+        # Настройка параметров загрузки
         ydl_opts = self.ydl_opts.copy()
         ydl_opts.update({
             "outtmpl": str(file_path),
@@ -544,15 +572,15 @@ class YoutubeDownloader(AbstractServiceDownloader):
         })
         
         try:
-            logger.debug(f"Downloading to: {file_path}")
+            logger.debug(f"Загрузка в: {file_path}")
             with YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
                 
-            logger.info(f"Download completed successfully: {file_path}")
+            logger.info(f"Загрузка успешно завершена: {file_path}")
             return YoutubeResult(data=YoutubeData(url=url, path=file_path, is_video=True))
         
         except DownloadError as e:
-            error_msg = f"Download error: {e}"
+            error_msg = f"Ошибка загрузки: {e}"
             logger.error(error_msg)
             return YoutubeResult(
                 status="error",
@@ -562,7 +590,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
             )
         
         except Exception as e:
-            error_msg = f"Unexpected download error: {e}"
+            error_msg = f"Неожиданная ошибка загрузки: {e}"
             logger.exception(error_msg)
             return YoutubeResult(
                 status="error",
@@ -573,41 +601,41 @@ class YoutubeDownloader(AbstractServiceDownloader):
             
     def get_error_description(self, code: YoutubeErrorCode) -> str:
         """
-        Get human-readable description for error code.
+        Получение человеко-читаемого описания для кода ошибки.
         
         Args:
-            code: Error code enum value
+            code: Значение перечисления кода ошибки
             
         Returns:
-            Description string
+            Строка описания
         """
         descriptions = {
-            YoutubeErrorCode.SUCCESS: "Operation completed successfully",
-            YoutubeErrorCode.INVALID_URL: "The provided YouTube URL is invalid or not supported",
-            YoutubeErrorCode.EMPTY_URL: "Empty or invalid URL provided",
-            YoutubeErrorCode.UNSUPPORTED_CONTENT_TYPE: "The YouTube content type is not supported",
-            YoutubeErrorCode.UNSUPPORTED_MEDIA_TYPE: "The media type is not supported",
-            YoutubeErrorCode.CONNECTION_ERROR: "Network connection error occurred",
-            YoutubeErrorCode.DOWNLOAD_ERROR: "Media download failed",
-            YoutubeErrorCode.EXTRACTOR_ERROR: "Media extraction failed",
-            YoutubeErrorCode.PROXY_ERROR: "Proxy connection error",
-            YoutubeErrorCode.LIVE_STREAM_NOT_SUPPORTED: "Live streams are not supported",
-            YoutubeErrorCode.PLAYLIST_NOT_SUPPORTED: "Playlists are not supported",
-            YoutubeErrorCode.ACCOUNT_NOT_SUPPORTED: "Account/channel content is not supported",
-            YoutubeErrorCode.SHORTS_NOT_SUPPORTED: "YouTube Shorts are not supported",
-            YoutubeErrorCode.POST_NOT_SUPPORTED: "Community posts are not supported",
-            YoutubeErrorCode.NO_VIDEO_FORMATS_FOUND: "No supported video formats found",
-            YoutubeErrorCode.NO_AUDIO_FORMATS_FOUND: "No supported audio formats found",
-            YoutubeErrorCode.NO_THUMBNAILS_FOUND: "No thumbnails found",
-            YoutubeErrorCode.NO_MEDIA_FORMATS_FOUND: "No supported media formats found",
-            YoutubeErrorCode.COOKIE_FILE_NOT_FOUND: "Cookie file not found",
-            YoutubeErrorCode.OUTPUT_PATH_ERROR: "Output path error",
-            YoutubeErrorCode.FILE_WRITE_ERROR: "File write error",
-            YoutubeErrorCode.UNEXPECTED_ERROR: "An unexpected error occurred",
-            YoutubeErrorCode.INITIALIZATION_ERROR: "Failed to initialize downloader",
-            YoutubeErrorCode.EXTRACT_INFO_NOT_CALLED: "extract_info() must be called before download",
-            YoutubeErrorCode.YT_DLP_ERROR: "yt-dlp internal error occurred",
+            YoutubeErrorCode.SUCCESS: "Операция успешно завершена",
+            YoutubeErrorCode.INVALID_URL: "Предоставленный URL YouTube неверен или не поддерживается",
+            YoutubeErrorCode.EMPTY_URL: "Предоставлен пустой или неверный URL",
+            YoutubeErrorCode.UNSUPPORTED_CONTENT_TYPE: "Тип контента YouTube не поддерживается",
+            YoutubeErrorCode.UNSUPPORTED_MEDIA_TYPE: "Тип медиа не поддерживается",
+            YoutubeErrorCode.CONNECTION_ERROR: "Произошла ошибка сетевого соединения",
+            YoutubeErrorCode.DOWNLOAD_ERROR: "Не удалось загрузить медиа",
+            YoutubeErrorCode.EXTRACTOR_ERROR: "Не удалось извлечь медиа",
+            YoutubeErrorCode.PROXY_ERROR: "Ошибка подключения к прокси",
+            YoutubeErrorCode.LIVE_STREAM_NOT_SUPPORTED: "Прямые трансляции не поддерживаются",
+            YoutubeErrorCode.PLAYLIST_NOT_SUPPORTED: "Плейлисты не поддерживаются",
+            YoutubeErrorCode.ACCOUNT_NOT_SUPPORTED: "Контент аккаунта/канала не поддерживается",
+            YoutubeErrorCode.SHORTS_NOT_SUPPORTED: "YouTube Shorts не поддерживаются",
+            YoutubeErrorCode.POST_NOT_SUPPORTED: "Сообщества не поддерживаются",
+            YoutubeErrorCode.NO_VIDEO_FORMATS_FOUND: "Поддерживаемые видео форматы не найдены",
+            YoutubeErrorCode.NO_AUDIO_FORMATS_FOUND: "Поддерживаемые аудио форматы не найдены",
+            YoutubeErrorCode.NO_THUMBNAILS_FOUND: "Миниатюры не найдены",
+            YoutubeErrorCode.NO_MEDIA_FORMATS_FOUND: "Поддерживаемые медиа форматы не найдены",
+            YoutubeErrorCode.COOKIE_FILE_NOT_FOUND: "Файл cookie не найден",
+            YoutubeErrorCode.OUTPUT_PATH_ERROR: "Ошибка выходного пути",
+            YoutubeErrorCode.FILE_WRITE_ERROR: "Ошибка записи файла",
+            YoutubeErrorCode.UNEXPECTED_ERROR: "Произошла непредвиденная ошибка",
+            YoutubeErrorCode.INITIALIZATION_ERROR: "Не удалось инициализировать загрузчик",
+            YoutubeErrorCode.EXTRACT_INFO_NOT_CALLED: "extract_info() должен быть вызван перед загрузкой",
+            YoutubeErrorCode.YT_DLP_ERROR: "Произошла внутренняя ошибка yt-dlp",
         }
-        return descriptions.get(code, "Unknown error")
+        return descriptions.get(code, "Неизвестная ошибка")
 
         
