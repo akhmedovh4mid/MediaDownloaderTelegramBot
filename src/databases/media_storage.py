@@ -4,67 +4,68 @@ from typing import Any, Dict, Optional
 
 from .redis_base import RedisBase
 
-# Create logger for this module
+
+# Создание логгера для этого модуля
 logger = logging.getLogger(__name__)
 
 
 class MediaCacheStorage(RedisBase):
     """
-    Redis storage for media data cache.
+    Redis-хранилище для кэширования медиа-данных.
     
-    Stores media information with URL-based keys and automatic expiration.
-    Used to cache media metadata to avoid repeated API calls.
+    Сохраняет информацию о медиа с ключами на основе URL и автоматическим истечением срока действия.
+    Используется для кэширования метаданных медиа, чтобы избежать повторных вызовов API.
     """
     
     def __init__(self, host: str, port: int, db: int, ttl: int = 86400):
         """
-        Initialize media cache storage.
+        Инициализация хранилища кэша медиа.
         
         Args:
-            host: Redis server hostname
-            port: Redis server port
-            db: Redis database number
-            ttl: Time-to-live for cache entries in seconds (default: 86400 = 24 hours)
+            host: Имя хоста Redis-сервера
+            port: Порт Redis-сервера
+            db: Номер базы данных Redis
+            ttl: Время жизни записей кэша в секундах (по умолчанию: 86400 = 24 часа)
         """
         super().__init__(host=host, port=port, db=db)
         self.ttl = ttl
-        logger.info("MediaCacheStorage initialized: host=%s, port=%s, db=%s, ttl=%ss", host, port, db, ttl)
+        logger.info("MediaCacheStorage инициализирован: host=%s, port=%s, db=%s, ttl=%ss", host, port, db, ttl)
     
     def _get_url_hash(self, url: str) -> str:
         """
-        Generate MD5 hash of URL for use as cache key.
+        Генерация MD5-хэша URL для использования в качестве ключа кэша.
         
         Args:
-            url: Media URL
+            url: URL медиа
             
         Returns:
-            MD5 hash string of the URL
+            Строка MD5-хэша URL
         """
         return hashlib.md5(url.encode()).hexdigest()
     
     def _get_cache_key(self, url: str) -> str:
         """
-        Generate Redis key for media cache.
+        Генерация ключа Redis для кэша медиа.
         
         Args:
-            url: Media URL
+            url: URL медиа
             
         Returns:
-            Redis key string in format 'media_cache:{url_hash}'
+            Строка ключа Redis в формате 'media_cache:{url_hash}'
         """
         url_hash = self._get_url_hash(url=url)
         return f"media_cache:{url_hash}"
     
     def store_media(self, url: str, media_data: Dict[str, Any]) -> bool:
         """
-        Store media data in cache with TTL expiration.
+        Сохранение медиа-данных в кэше с истечением срока действия TTL.
         
         Args:
-            url: Media URL
-            media_data: Media information dictionary
+            url: URL медиа
+            media_data: Словарь с информацией о медиа
             
         Returns:
-            True if data stored successfully, False otherwise
+            True если данные успешно сохранены, False в противном случае
         """
         try:
             key = self._get_cache_key(url=url)
@@ -81,25 +82,25 @@ class MediaCacheStorage(RedisBase):
             )
             
             if result:
-                logger.info("Media cached for url=%s, ttl=%ss", url, self.ttl)
+                logger.info("Медиа закэшировано для url=%s, ttl=%ss", url, self.ttl)
             else:
-                logger.warning("Failed to cache media for url=%s", url)
+                logger.warning("Не удалось закэшировать медиа для url=%s", url)
                 
             return result
             
         except Exception as e:
-            logger.error("Error storing media cache for url=%s: %s", url, e)
+            logger.error("Ошибка сохранения кэша медиа для url=%s: %s", url, e)
             return False
     
     def get_media(self, url: str) -> Optional[Dict[str, Any]]:
         """
-        Retrieve media data from cache and refresh TTL.
+        Получение медиа-данных из кэша с обновлением TTL.
         
         Args:
-            url: Media URL
+            url: URL медиа
             
         Returns:
-            Cached media data dictionary or None if not found
+            Словарь закэшированных медиа-данных или None, если не найдено
         """
         try:
             key = self._get_cache_key(url=url)
@@ -114,12 +115,12 @@ class MediaCacheStorage(RedisBase):
                     value=self._serialize(data=cache_data)
                 )
                 
-                logger.debug("Media cache retrieved for url=%s, TTL refreshed", url)
+                logger.debug("Кэш медиа получен для url=%s, TTL обновлен", url)
                 return cache_data
                 
-            logger.debug("Media cache not found for url=%s", url)
+            logger.debug("Кэш медиа не найден для url=%s", url)
             return None
             
         except Exception as e:
-            logger.error("Error getting media cache for url=%s: %s", url, e)
+            logger.error("Ошибка получения кэша медиа для url=%s: %s", url, e)
             return None

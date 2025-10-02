@@ -5,19 +5,19 @@ from typing import Any, Optional
 
 class RedisBase:
     """
-    Base class for Redis storage implementations.
+    Базовый класс для реализаций Redis-хранилищ.
     
-    Provides common serialization/deserialization methods and connection management
-    for Redis-based storage classes. Handles JSON serialization and connection
-    testing for derived storage classes.
+    Предоставляет общие методы сериализации/десериализации и управления подключением
+    для классов хранилищ на основе Redis. Обрабатывает JSON-сериализацию и тестирование
+    подключения для производных классов хранилищ.
     
-    Attributes:
-        redis_client (redis.Redis): Redis client instance
-        host (str): Redis server hostname
-        port (int): Redis server port
-        db (int): Redis database number
+    Атрибуты:
+        redis_client (redis.Redis): Экземпляр Redis-клиента
+        host (str): Имя хоста Redis-сервера
+        port (int): Порт Redis-сервера
+        db (int): Номер базы данных Redis
         
-    Example:
+    Пример:
         >>> from src.storage.redis_base import RedisBase
         >>> 
         >>> class UserSessionStorage(RedisBase):
@@ -31,20 +31,20 @@ class RedisBase:
     
     def __init__(self, host: str, port: int, db: int) -> None:
         """
-        Initialize Redis client with connection parameters.
+        Инициализация Redis-клиента с параметрами подключения.
         
         Args:
-            host: Redis server hostname or IP address
-            port: Redis server port
-            db: Redis database number (0-15)
+            host: Имя хоста или IP-адрес Redis-сервера
+            port: Порт Redis-сервера
+            db: Номер базы данных Redis (0-15)
             
         Raises:
-            redis.ConnectionError: If connection to Redis server fails
+            redis.ConnectionError: Если подключение к Redis-серверу не удалось
             
-        Example:
+        Пример:
             >>> storage = RedisBase(host='localhost', port=6379, db=0)
             >>> if storage.ping():
-            ...     print("Connected successfully")
+            ...     print("Подключение успешно")
         """
         self.redis_client = redis.Redis(
             host=host,
@@ -59,18 +59,18 @@ class RedisBase:
     
     def _serialize(self, data: Any) -> str:
         """
-        Serialize Python object to JSON string.
+        Сериализация Python-объекта в JSON-строку.
         
-        Converts Python objects to JSON format for storage in Redis.
-        Handles non-serializable objects by converting them to strings.
+        Преобразует Python-объекты в JSON-формат для хранения в Redis.
+        Обрабатывает несериализуемые объекты, преобразуя их в строки.
         
         Args:
-            data: Python object to serialize (dict, list, str, int, etc.)
+            data: Python-объект для сериализации (dict, list, str, int, и т.д.)
             
         Returns:
-            JSON-formatted string representation of the data
+            JSON-форматированное строковое представление данных
             
-        Example:
+        Пример:
             >>> data = {'user_id': 123, 'media_url': 'https://example.com/video'}
             >>> serialized = storage._serialize(data)
             >>> print(serialized)
@@ -80,20 +80,20 @@ class RedisBase:
     
     def _deserialize(self, data: str) -> Optional[Any]:
         """
-        Deserialize JSON string to Python object.
+        Десериализация JSON-строки в Python-объект.
         
-        Converts JSON string from Redis back to Python object.
+        Преобразует JSON-строку из Redis обратно в Python-объект.
         
         Args:
-            data: JSON string to deserialize
+            data: JSON-строка для десериализации
             
         Returns:
-            Deserialized Python object or None if input is empty
+            Десериализованный Python-объект или None если входные данные пусты
             
         Raises:
-            json.JSONDecodeError: If input string is not valid JSON
+            json.JSONDecodeError: Если входная строка не является валидным JSON
             
-        Example:
+        Пример:
             >>> json_string = '{"user_id": 123, "media_url": "https://example.com/video"}'
             >>> deserialized = storage._deserialize(json_string)
             >>> print(deserialized)
@@ -105,18 +105,18 @@ class RedisBase:
     
     def ping(self) -> bool:
         """
-        Test connection to Redis server.
+        Тестирование подключения к Redis-серверу.
         
-        Sends a PING command to Redis server to verify connectivity.
+        Отправляет команду PING на Redis-сервер для проверки подключения.
         
         Returns:
-            True if connection is successful, False if connection fails
+            True если подключение успешно, False если подключение не удалось
             
-        Example:
+        Пример:
             >>> if storage.ping():
-            ...     print("Redis connection: OK")
+            ...     print("Подключение к Redis: OK")
             ... else:
-            ...     print("Redis connection: FAILED")
+            ...     print("Подключение к Redis: ОШИБКА")
         """
         try:
             return self.redis_client.ping()
@@ -125,16 +125,16 @@ class RedisBase:
     
     def get_connection_info(self) -> dict:
         """
-        Get Redis connection parameters and status.
+        Получение параметров подключения и статуса Redis.
         
         Returns:
-            Dictionary containing connection details and status
+            Словарь, содержащий детали подключения и статус
             
-        Example:
+        Пример:
             >>> info = storage.get_connection_info()
-            >>> print(f"Host: {info['host']}:{info['port']}")
-            >>> print(f"Database: {info['db']}")
-            >>> print(f"Status: {info['status']}")
+            >>> print(f"Хост: {info['host']}:{info['port']}")
+            >>> print(f"База данных: {info['db']}")
+            >>> print(f"Статус: {info['status']}")
         """
         return {
             'host': self.host,

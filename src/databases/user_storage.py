@@ -3,57 +3,58 @@ from typing import Any, Dict, Optional
 
 from .redis_base import RedisBase
 
-# Create logger for this module
+
+# Создание логгера для этого модуля
 logger = logging.getLogger(__name__)
 
 
 class UserSessionStorage(RedisBase):
     """
-    Redis-based storage for user sessions with configurable TTL.
+    Redis-хранилище для пользовательских сессий с настраиваемым TTL.
     
-    Provides methods to create, retrieve, and manage user sessions
-    with automatic expiration. Each session stores media information
-    and service data for quick access.
+    Предоставляет методы для создания, получения и управления пользовательскими сессиями
+    с автоматическим истечением срока действия. Каждая сессия сохраняет информацию о медиа
+    и служебные данные для быстрого доступа.
     """
     
     def __init__(self, host: str, port: int, db: int, ttl: int = 7200):
         """
-        Initialize user session storage.
+        Инициализация хранилища пользовательских сессий.
         
         Args:
-            host: Redis server hostname
-            port: Redis server port
-            db: Redis database number
-            ttl: Time-to-live for sessions in seconds (default: 7200 = 2 hours)
+            host: Имя хоста Redis-сервера
+            port: Порт Redis-сервера
+            db: Номер базы данных Redis
+            ttl: Время жизни сессий в секундах (по умолчанию: 7200 = 2 часа)
         """
         super().__init__(host=host, port=port, db=db)
         self.ttl = ttl
-        logger.info("UserSessionStorage initialized: host=%s, port=%s, db=%s, ttl=%ss", host, port, db, ttl)
-    
+        logger.info("UserSessionStorage инициализирован: host=%s, port=%s, db=%s, ttl=%ss", host, port, db, ttl)
+            
     def _get_session_key(self, chat_id: int) -> str:
         """
-        Generate Redis key for user session.
+        Генерация ключа Redis для пользовательской сессии.
         
         Args:
-            chat_id: Telegram chat ID
+            chat_id: ID чата Telegram
             
         Returns:
-            Redis key string in format 'user_session:{chat_id}'
+            Строка ключа Redis в формате 'user_session:{chat_id}'
         """
         return f"user_session:{chat_id}"
     
     def create_session(self, chat_id: int, url: str, service: str, media_data: Dict[str, Any]) -> bool:
         """
-        Create a new user session with TTL expiration.
+        Создание новой пользовательской сессии с истечением срока действия TTL.
         
         Args:
-            chat_id: Telegram chat ID
-            url: Media URL that user requested
-            service: Service name (youtube, instagram, etc.)
-            media_data: Media information including formats, thumbnails, etc.
+            chat_id: ID чата Telegram
+            url: URL медиа, запрошенный пользователем
+            service: Название сервиса (youtube, instagram, и т.д.)
+            media_data: Информация о медиа, включая форматы, миниатюры и т.д.
             
         Returns:
-            True if session created successfully, False otherwise
+            True если сессия создана успешно, False в противном случае
         """
         try:
             key = self._get_session_key(chat_id=chat_id)
@@ -71,28 +72,28 @@ class UserSessionStorage(RedisBase):
             )
             
             if result:
-                logger.info("Session created for chat_id=%s, service=%s, ttl=%ss", chat_id, service, self.ttl)
+                logger.info("Сессия создана для chat_id=%s, service=%s, ttl=%ss", chat_id, service, self.ttl)
             else:
-                logger.warning("Failed to create session for chat_id=%s", chat_id)
+                logger.warning("Не удалось создать сессию для chat_id=%s", chat_id)
                 
             return result
             
         except Exception as e:
-            logger.error("Error creating session for chat_id=%s: %s", chat_id, e)
+            logger.error("Ошибка создания сессии для chat_id=%s: %s", chat_id, e)
             return False
     
     def get_session(self, chat_id: int) -> Optional[Dict[str, Any]]:
         """
-        Retrieve user session and refresh TTL.
+        Получение пользовательской сессии с обновлением TTL.
         
-        When a session is accessed, its TTL is reset to maintain
-        the session alive for active users.
+        При доступе к сессии её TTL сбрасывается, чтобы поддерживать
+        сессию активной для активных пользователей.
         
         Args:
-            chat_id: Telegram chat ID
+            chat_id: ID чата Telegram
             
         Returns:
-            Session data dictionary or None if session doesn't exist
+            Словарь данных сессии или None если сессия не существует
         """
         try:
             key = self._get_session_key(chat_id=chat_id)
@@ -101,12 +102,12 @@ class UserSessionStorage(RedisBase):
             if data:
                 session_data = self._deserialize(data=data)
                 self.redis_client.setex(name=key, time=self.ttl, value=self._serialize(session_data))
-                logger.debug("Session retrieved for chat_id=%s, TTL refreshed", chat_id)
+                logger.debug("Сессия получена для chat_id=%s, TTL обновлен", chat_id)
                 return session_data
                 
-            logger.debug("Session not found for chat_id=%s", chat_id)
+            logger.debug("Сессия не найдена для chat_id=%s", chat_id)
             return None
             
         except Exception as e:
-            logger.error("Error getting session for chat_id=%s: %s", chat_id, e)
+            logger.error("Ошибка получения сессии для chat_id=%s: %s", chat_id, e)
             return None
