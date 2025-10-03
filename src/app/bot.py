@@ -122,7 +122,7 @@ class TelegramBot:
         callback_handlers = {
             "video": ServiceCallbackHandler.handle_video,
             "image": ServiceCallbackHandler.handle_image,
-            "audio": ServiceCallbackHandler.handle_auido,
+            "audio": ServiceCallbackHandler.handle_audio,
             "thumbnail": ServiceCallbackHandler.handle_thumbnail,
         }
         
@@ -211,7 +211,6 @@ class TelegramBot:
                 await self._handle_unsupported_domain(domain, message)
                 
         except Exception as e:
-            self.stats['errors_count'] += 1
             self.logger.error(f"❌ Ошибка обработки URL {url}: {str(e)}", exc_info=True)
             
             error_text = (

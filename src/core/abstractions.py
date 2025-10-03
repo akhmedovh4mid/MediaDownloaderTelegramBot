@@ -53,9 +53,11 @@ class AbstractServiceVideoTypeDict(TypedDict):
     id: str
     url: str
     name: str
+    has_audio: bool
     fps: NotRequired[Optional[int]]
     width: NotRequired[Optional[int]]
     height: NotRequired[Optional[int]]
+    language: NotRequired[Optional[str]]
     total_bitrate: NotRequired[Optional[int]]
 
 
@@ -68,17 +70,21 @@ class AbstractServiceVideo(ABC):
         id: Уникальный идентификатор видео
         url: Прямая ссылка на видео
         name: Имя файла или отображаемое название видео
+        has_audio: Присутсвие аудио дорожки
         fps: Количество кадров в секунду (опционально)
         width: Ширина видео в пикселях (опционально)
         height: Высота видео в пикселях (опционально)
+        language: Язык audio дорожки (опционально)
         total_bitrate: Общий битрейт видео в kbps (опционально)
     """
     id: str
     url: str
     name: str
+    has_audio: bool = False
     fps: Optional[int] = None
     width: Optional[int] = None
     height: Optional[int] = None
+    language: Optional[str] = None
     total_bitrate: Optional[int] = None
     
     def to_dict(self) -> AbstractServiceVideoTypeDict:
@@ -92,9 +98,11 @@ class AbstractServiceVideo(ABC):
             "id": str(self.id),
             "url": self.url,
             "name": self.name,
+            "has_audio": self.has_audio, 
             "fps": self.fps,
             "width": self.width,
             "height": self.height,
+            "language": self.language,
             "total_bitrate": self.total_bitrate,
         }
     
@@ -105,6 +113,7 @@ class AbstractServiceAudioTypeDict(TypedDict):
     url: str
     name: str
     author: NotRequired[Optional[str]]
+    language: NotRequired[Optional[str]]
     total_bitrate: NotRequired[Optional[int]]
 
 
@@ -118,12 +127,14 @@ class AbstractServiceAudio(ABC):
         url: Прямая ссылка на аудио
         name: Имя файла или отображаемое название
         author: Автор или исполнитель (опционально)
+        language: Язык audio дорожки (опционально)
         total_bitrate: Общий битрейт аудио в kbps (опционально)
     """
     id: str
     url: str
     name: str
     author: Optional[str] = None
+    language: Optional[str] = None
     total_bitrate: Optional[int] = None
     
     def to_dict(self) -> AbstractServiceAudioTypeDict:
@@ -138,6 +149,7 @@ class AbstractServiceAudio(ABC):
             "url": self.url,
             "name": self.name,
             "author": self.author,
+            "language": self.language,
             "total_bitrate": self.total_bitrate,
         }
         

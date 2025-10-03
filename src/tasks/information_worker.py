@@ -1,20 +1,21 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
-from .telegram_client import send_photo
-from .common import get_service_downloader
 from .app import (
-    app, 
-    celery_event_loop, 
-    media_cache_storage, 
+    app,
+    celery_event_loop,
+    media_cache_storage,
+    user_activity_queue,
     user_session_storage,
 )
+from .common import get_service_downloader
+from .telegram_client import send_photo, send_message, delete_message
 
 from src.core import (
-    AbstractServiceResultTypeDict,
+    AbstractServiceResultTypeDict, 
+    AbstractServiceAudioTypeDict, 
+    AbstractServiceImageTypeDict, 
     AbstractServiceVideoTypeDict,
-    AbstractServiceAudioTypeDict,
-    AbstractServiceImageTypeDict,
     AbstractServiceErrorCode,
 )
 
@@ -40,9 +41,10 @@ class MediaProcessor:
         # Группируем видео по качеству (берем лучшее для каждого разрешения)
         video_by_quality: Dict[int, AbstractServiceVideoTypeDict] = {}
         for video in videos:
-            current_best = video_by_quality.get(video["height"])
-            if not current_best or video.get("bitrate", 0) > current_best.get("bitrate", 0):
-                video_by_quality[video["height"]] = video
+            if video["width"] is not None:
+                current_best = video_by_quality.get(video["width"])
+                if not current_best or video.get("total_bitrate", 0) > current_best.get("total_bitrate", 0):
+                    video_by_quality[video["width"]] = video
         
         # Создаем кнопки
         buttons = []
@@ -60,7 +62,7 @@ class MediaProcessor:
                 video = video_by_quality[quality]
                 buttons.append(MediaButton(
                     row=1,
-                    label=f"🎬 {quality}p",
+                    label=f"🎬 {video['height']}p",
                     callback_data=f"video:{video['id']}"
                 ))
                 
@@ -103,16 +105,16 @@ class MediaProcessor:
             return None
         
         # Группируем изображения по высоте и берем лучшее качество
-        images_by_height: Dict[int, List[AbstractServiceImageTypeDict]] = {}
+        images_by_width: Dict[int, List[AbstractServiceImageTypeDict]] = {}
         for image in images:
-            height = image["height"]
-            if height not in images_by_height:
-                images_by_height[height] = []
-            images_by_height[height].append(image)
+            width = image["width"]
+            if width not in images_by_width:
+                images_by_width[width] = []
+            images_by_width[width].append(image)
         
         # Находим максимальное качество
-        max_quality = max(images_by_height.keys()) if images_by_height else 0
-        best_images = images_by_height.get(max_quality, [])
+        max_quality = max(images_by_width.keys()) if images_by_width else 0
+        best_images = images_by_width.get(max_quality, [])
         
         if not best_images:
             return None
@@ -138,50 +140,73 @@ def _create_keyboard_layout(buttons: List[Optional[MediaButton]]) -> List[Tuple[
     return keyboard_data
 
 
-@app.task
-def get_media_info(url: str, service: str, chat_id: int, message_id: str) -> None:
-    """
-    Основная задача для получения информации о медиа
-    и отправки пользователю вариантов загрузки
-    """
-    try:
-        # Пытаемся получить медиа из кеша
-        cached_media = media_cache_storage.get_media(url=url)
+@app.task(name="information_worker.get_media_info", queue="information_queue")
+def get_media_info(chat_id: int, message_id: int, url: str, service: str) -> None:
+    if user_activity_queue.get_extract(chat_id=chat_id):
+        return
+    
+    user_activity_queue.create_extract(chat_id=chat_id, url=url, service=service)
+    
+    message = celery_event_loop.run_until_complete(
+        send_message(
+            chat_id=chat_id,
+            text="📥 Получил ссылку! Сейчас проверю и подготовлю данные..."
+        )
+    )
+    
+    celery_event_loop.run_until_complete(
+        delete_message(
+            chat_id=chat_id,
+            message_id=message.message_id,
+        )
+    )
+    
+    message = celery_event_loop.run_until_complete(
+        send_message(
+            chat_id=chat_id,
+            text="🔍 Ищу медиа-контент... пожалуйста, подождите ⏳"
+        )
+    )
+    
+    if media := media_cache_storage.get_media(url=url):
+        response = AbstractServiceResultTypeDict(
+            data=media["data"],
+            context=None, 
+            status="success", 
+            code=AbstractServiceErrorCode.SUCCESS.value, 
+        )
+    else:
+        downloader = get_service_downloader(service=service)
+        response = downloader.extract_info(url=url).to_dict()
+    
+    if response["status"] == "success":
+        _handle_success_response(
+            response=response,
+            url=url,
+            service=service,
+            chat_id=chat_id,
+            message_id=message.message_id
+        )
+    else:
+        _handle_error_response(
+            response=response,
+            url=url,
+            service=service,
+            chat_id=chat_id,
+            message_id=message.message_id
+        )
         
-        if cached_media:
-            response = AbstractServiceResultTypeDict(
-                status="success",
-                code=AbstractServiceErrorCode.SUCCESS.value,
-                data=cached_media["data"]
-            )
-        else:
-            # Загружаем информацию о медиа
-            downloader = get_service_downloader(service=service)
-            response = downloader.extract_info(url=url).to_dict()
+    user_activity_queue.delete_extract(chat_id=chat_id)
         
-        # Обрабатываем успешный ответ
-        if response["status"] == "success":
-            _handle_success_response(
-                response=response,
-                url=url,
-                service=service,
-                chat_id=chat_id
-            )
-        else:
-            _handle_error_response(response)
-            
-    except Exception as e:
-        print(f"❌ Unexpected error processing media info: {e}")
-        # Здесь можно добавить отправку сообщения об ошибке пользователю
 
 
 def _handle_success_response(
     response: AbstractServiceResultTypeDict,
     url: str,
     service: str,
-    chat_id: int
+    chat_id: int,
+    message_id: int,
 ) -> None:
-    """Обрабатывает успешный ответ от сервиса"""
     media_data = response["data"]
     
     # Сохраняем сессию и кешируем медиа
@@ -225,20 +250,50 @@ def _handle_success_response(
     # Отправляем результат пользователю
     keyboard_data = _create_keyboard_layout(buttons)
     
+    caption = (
+        f"✅ Медиа готово!\n\n"
+        f"📹 Сервис: {service}\n"
+        f"👤 Автор: {media_data['author_name']}\n"
+        f"📝 Заголовок: {media_data['title']}\n\n"
+        "👇 Выберите действие:"
+    )
+    
+    celery_event_loop.run_until_complete(
+        delete_message(
+            chat_id=chat_id,
+            message_id=message_id,
+        )
+    )
+    
     celery_event_loop.run_until_complete(
         send_photo(
             chat_id=chat_id,
-            caption=f"📹 {media_data['title']}",
+            caption=caption,
             preview_url=preview_url,
             keyboard_data=keyboard_data
         )
     )
 
 
-def _handle_error_response(response: AbstractServiceResultTypeDict) -> None:
-    """Обрабатывает ошибочный ответ от сервиса"""
-    error_code = response.get("code", "UNKNOWN_ERROR")
-    error_message = response.get("message", "No error message provided")
+def _handle_error_response(
+    response: AbstractServiceResultTypeDict,
+    url: str,
+    service: str,
+    chat_id: int,
+    message_id: int,
+) -> None:
+    downloader = get_service_downloader(service=service)
     
-    print(f"⚠️ Service error [{error_code}]: {error_message}")
-    # Здесь можно добавить логику для разных типов ошибок
+    celery_event_loop.run_until_complete(
+        delete_message(
+            chat_id=chat_id,
+            message_id=message_id,
+        )
+    )
+    
+    celery_event_loop.run_until_complete(
+        send_message(
+            chat_id=chat_id,
+            text=f"❌ Ой! Не удалось обработать ссылку.\nПричина: {downloader.get_error_description(response['code'])}\n\nПопробуйте другую ссылку 😉"
+        )
+    )

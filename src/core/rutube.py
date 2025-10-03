@@ -402,6 +402,8 @@ class RutubeDownloader(AbstractServiceDownloader):
         self._data.description = data.get("description")
         
         # Извлечение видео форматов
+        video_count = 0
+        audio_count = 0
         for format in data.get("formats", []):
             if (
                 format["ext"] == "mp4"
@@ -412,9 +414,11 @@ class RutubeDownloader(AbstractServiceDownloader):
                         id=uuid4(),
                         url=format["url"],
                         name=format["format_id"],
+                        has_audio=False if format["acodec"] == "none" else True,
                         fps=format.get("fps"),
                         width=format.get("width"),
                         height=format.get("height"),
+                        language=format.get("language"),
                         total_bitrate=format.get("tbr"),
                     )
                 )
@@ -429,9 +433,11 @@ class RutubeDownloader(AbstractServiceDownloader):
                         id=uuid4(),
                         url=format["url"],
                         name=format["format_id"],
+                        has_audio=False if format["acodec"] == "none" else True,
                         fps=format.get("fps"),
                         width=format.get("width"),
                         height=format.get("height"),
+                        language=format.get("language"),
                         total_bitrate=format.get("tbr"),
                     )
                 )
@@ -447,6 +453,7 @@ class RutubeDownloader(AbstractServiceDownloader):
                         id=uuid4(),
                         url=format["url"],
                         name=format["format_id"],
+                        language=format.get("language"),
                     )
                 )
                 audio_count += 1
@@ -461,6 +468,7 @@ class RutubeDownloader(AbstractServiceDownloader):
                         id=uuid4(),
                         url=format["url"],
                         name=format["format_id"],
+                        language=format.get("language"),
                     )
                 )
                 audio_count += 1
@@ -504,22 +512,22 @@ class RutubeDownloader(AbstractServiceDownloader):
         self._last_result = RutubeResult(data=self._data)
         return self._last_result
     
-    def _generate_safe_filename(self, url: str, video_format_id: str) -> str:
+    def _generate_safe_filename(self, url: str, format_id: str) -> str:
         """
         Генерация безопасного имени файла на основе хеша URL.
         
         Args:
             url: URL контента
-            video_format_id: ID видео формата
+            format_id: ID видео формата
             
         Returns:
             Строка с безопасным именем файла
         """
-        hash_input = f"rutube_{url}_{video_format_id}"
+        hash_input = f"rutube_{url}_{format_id}"
         file_hash = hashlib.sha256(hash_input.encode()).hexdigest()[:16]
         return file_hash
 
-    def download_media(
+    def download_video(
         self,
         url: str,
         video_format_id: str,
@@ -548,7 +556,7 @@ class RutubeDownloader(AbstractServiceDownloader):
         # Генерация безопасного имени файла
         safe_filename = self._generate_safe_filename(
             url=url,
-            video_format_id=video_format_id
+            format_id=video_format_id
         )
         file_path = output_dir / f"{safe_filename}.mp4"
         
@@ -588,6 +596,71 @@ class RutubeDownloader(AbstractServiceDownloader):
                 data=RutubeData(url=url)
             )
             
+    def download_audio(
+            self,
+            url: str,
+            audio_format_id: str,
+            output_path: str = "./downloads/rutube/",
+        ) -> RutubeResult:
+        """
+        Загрузка аудио с использованием ранее извлеченной информации.
+        
+        Args:
+            url: URL видео/аудио для загрузки
+            audio_format_id: ID аудио формата для загрузки
+            output_path: Путь к директории для сохранения файла
+            
+        Returns:
+            YoutubeResult: Результат операции загрузки
+        """
+        logger.info(f"Начало загрузки аудио: url={url}, audio_format={audio_format_id}")
+        
+        # Подготовка выходной директории
+        output_dir = Path(output_path)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Создание безопасного имени файла
+        safe_filename = self._generate_safe_filename(
+            url=url,
+            format_id=audio_format_id,
+        )
+        file_path = output_dir / f"{safe_filename}.mp3"
+        
+        # Настройка параметров загрузки
+        ydl_opts = self.ydl_opts.copy()
+        ydl_opts.update({
+            "outtmpl": str(file_path),
+            "format": audio_format_id,
+        })
+        
+        try:
+            logger.debug(f"Загрузка в: {file_path}")
+            with YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+                
+            logger.info(f"Аудио успешно загружено: {file_path}")
+            return RutubeResult(data=RutubeData(url=url, path=file_path, is_video=False))
+        
+        except DownloadError as e:
+            error_msg = f"Ошибка загрузки аудио: {e}"
+            logger.error(error_msg)
+            return RutubeResult(
+                status="error",
+                context=error_msg,
+                code=RutubeErrorCode.DOWNLOAD_ERROR,
+                data=RutubeData(url=url)
+            )
+        
+        except Exception as e:
+            error_msg = f"Неожиданная ошибка при загрузке аудио: {e}"
+            logger.exception(error_msg)
+            return RutubeResult(
+                status="error",
+                context=error_msg,
+                code=RutubeErrorCode.UNEXPECTED_ERROR,
+                data=RutubeData(url=url)
+            )
+            
     def get_error_description(self, code: RutubeErrorCode) -> str:
         """
         Получение человеко-читаемого описания для кода ошибки.
@@ -599,27 +672,27 @@ class RutubeDownloader(AbstractServiceDownloader):
             Строка с описанием
         """
         descriptions = {
-            RutubeErrorCode.SUCCESS: "Операция успешно завершена",
-            RutubeErrorCode.INVALID_URL: "Предоставленный URL Rutube невалиден или не поддерживается",
-            RutubeErrorCode.EMPTY_URL: "Предоставлен пустой или невалидный URL",
-            RutubeErrorCode.UNSUPPORTED_CONTENT_TYPE: "Тип контента Rutube не поддерживается",
-            RutubeErrorCode.UNSUPPORTED_MEDIA_TYPE: "Тип медиа не поддерживается",
-            RutubeErrorCode.CONNECTION_ERROR: "Произошла ошибка сетевого соединения",
-            RutubeErrorCode.DOWNLOAD_ERROR: "Ошибка загрузки медиа",
-            RutubeErrorCode.EXTRACTOR_ERROR: "Ошибка извлечения медиа",
-            RutubeErrorCode.PROXY_ERROR: "Ошибка подключения к прокси",
-            RutubeErrorCode.LIVE_STREAM_NOT_SUPPORTED: "Прямые трансляции не поддерживаются",
-            RutubeErrorCode.PLAYLIST_NOT_SUPPORTED: "Плейлисты не поддерживаются",
-            RutubeErrorCode.ACCOUNT_NOT_SUPPORTED: "Контент аккаунта/канала не поддерживается",
-            RutubeErrorCode.NO_MEDIA_FORMATS_FOUND: "Не найдено поддерживаемых медиа форматов",
-            RutubeErrorCode.NO_THUMBNAILS_FOUND: "Миниатюры не найдены",
-            RutubeErrorCode.COOKIE_FILE_NOT_FOUND: "Файл cookie не найден",
-            RutubeErrorCode.OUTPUT_PATH_ERROR: "Ошибка пути вывода",
-            RutubeErrorCode.FILE_WRITE_ERROR: "Ошибка записи файла",
-            RutubeErrorCode.UNEXPECTED_ERROR: "Произошла непредвиденная ошибка",
-            RutubeErrorCode.INITIALIZATION_ERROR: "Ошибка инициализации загрузчика",
-            RutubeErrorCode.EXTRACT_INFO_NOT_CALLED: "extract_info() должен быть вызван перед загрузкой",
-            RutubeErrorCode.YT_DLP_ERROR: "Произошла внутренняя ошибка yt-dlp",
+            RutubeErrorCode.SUCCESS.value: "Операция успешно завершена",
+            RutubeErrorCode.INVALID_URL.value: "Предоставленный URL Rutube невалиден или не поддерживается",
+            RutubeErrorCode.EMPTY_URL.value: "Предоставлен пустой или невалидный URL",
+            RutubeErrorCode.UNSUPPORTED_CONTENT_TYPE.value: "Тип контента Rutube не поддерживается",
+            RutubeErrorCode.UNSUPPORTED_MEDIA_TYPE.value: "Тип медиа не поддерживается",
+            RutubeErrorCode.CONNECTION_ERROR.value: "Произошла ошибка сетевого соединения",
+            RutubeErrorCode.DOWNLOAD_ERROR.value: "Ошибка загрузки медиа",
+            RutubeErrorCode.EXTRACTOR_ERROR.value: "Ошибка извлечения медиа",
+            RutubeErrorCode.PROXY_ERROR.value: "Ошибка подключения к прокси",
+            RutubeErrorCode.LIVE_STREAM_NOT_SUPPORTED.value: "Прямые трансляции не поддерживаются",
+            RutubeErrorCode.PLAYLIST_NOT_SUPPORTED.value: "Плейлисты не поддерживаются",
+            RutubeErrorCode.ACCOUNT_NOT_SUPPORTED.value: "Контент аккаунта/канала не поддерживается",
+            RutubeErrorCode.NO_MEDIA_FORMATS_FOUND.value: "Не найдено поддерживаемых медиа форматов",
+            RutubeErrorCode.NO_THUMBNAILS_FOUND.value: "Миниатюры не найдены",
+            RutubeErrorCode.COOKIE_FILE_NOT_FOUND.value: "Файл cookie не найден",
+            RutubeErrorCode.OUTPUT_PATH_ERROR.value: "Ошибка пути вывода",
+            RutubeErrorCode.FILE_WRITE_ERROR.value: "Ошибка записи файла",
+            RutubeErrorCode.UNEXPECTED_ERROR.value: "Произошла непредвиденная ошибка",
+            RutubeErrorCode.INITIALIZATION_ERROR.value: "Ошибка инициализации загрузчика",
+            RutubeErrorCode.EXTRACT_INFO_NOT_CALLED.value: "extract_info() должен быть вызван перед загрузкой",
+            RutubeErrorCode.YT_DLP_ERROR.value: "Произошла внутренняя ошибка yt-dlp",
         }
         return descriptions.get(code, "Неизвестная ошибка")
 

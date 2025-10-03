@@ -6,6 +6,7 @@
 """
 
 import hashlib
+import json
 import logging
 from enum import Enum
 from uuid import uuid4
@@ -189,6 +190,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                 "fragment_retries": retries_count,
                 
                 "concurrent_fragment_downloads": concurrent_download_count,
+                
             }
             
             self.unsupported_types: List[ContentType] = [
@@ -419,9 +421,11 @@ class YoutubeDownloader(AbstractServiceDownloader):
                         id=uuid4(),
                         url=format["url"],
                         name=format["format_id"],
+                        has_audio=False if format["acodec"] == "none" else True,
                         fps=format.get("fps"),
                         width=format.get("width"),
                         height=format.get("height"),
+                        language=format.get("language"),
                         total_bitrate=format.get("tbr"),
                     )
                 )
@@ -436,9 +440,11 @@ class YoutubeDownloader(AbstractServiceDownloader):
                         id=uuid4(),
                         url=format["url"],
                         name=format["format_id"],
+                        has_audio=False if format["acodec"] == "none" else True,
                         fps=format.get("fps"),
                         width=format.get("width"),
                         height=format.get("height"),
+                        language=format.get("language"),
                         total_bitrate=format.get("tbr"),
                     )
                 )
@@ -454,6 +460,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                         id=uuid4(),
                         url=format["url"],
                         name=format["format_id"],
+                        language=format.get("language"),
                     )
                 )
                 audio_count += 1
@@ -468,6 +475,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                         id=uuid4(),
                         url=format["url"],
                         name=format["format_id"],
+                        language=format.get("language"),
                     )
                 )
                 audio_count += 1
@@ -515,22 +523,22 @@ class YoutubeDownloader(AbstractServiceDownloader):
         self._last_result = YoutubeResult(data=self._data)
         return self._last_result
     
-    def _generate_safe_filename(self, url: str, video_format_id: str) -> str:
+    def _generate_safe_filename(self, url: str, format_id: str) -> str:
         """
         Генерация безопасного имени файла на основе хэша URL.
         
         Args:
             url: URL контента
-            video_format_id: ID видео формата
+            format_id: ID видео формата
             
         Returns:
             Безопасное имя файла
         """
-        hash_input = f"youtube_{url}_{video_format_id}"
+        hash_input = f"youtube_{url}_{format_id}"
         file_hash = hashlib.sha256(hash_input.encode()).hexdigest()[:16]
         return file_hash
 
-    def download_media(
+    def download_video(
         self,
         url: str,
         video_format_id: str,
@@ -559,7 +567,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
         # Создание безопасного имени файла
         safe_filename = self._generate_safe_filename(
             url=url,
-            video_format_id=video_format_id,
+            format_id=video_format_id,
         )
         file_path = output_dir / f"{safe_filename}.mp4"
         
@@ -599,6 +607,71 @@ class YoutubeDownloader(AbstractServiceDownloader):
                 data=YoutubeData(url=url)
             )
             
+    def download_audio(
+            self,
+            url: str,
+            audio_format_id: str,
+            output_path: str = "./downloads/youtube/",
+        ) -> YoutubeResult:
+        """
+        Загрузка аудио с использованием ранее извлеченной информации.
+        
+        Args:
+            url: URL видео/аудио для загрузки
+            audio_format_id: ID аудио формата для загрузки
+            output_path: Путь к директории для сохранения файла
+            
+        Returns:
+            YoutubeResult: Результат операции загрузки
+        """
+        logger.info(f"Начало загрузки аудио: url={url}, audio_format={audio_format_id}")
+        
+        # Подготовка выходной директории
+        output_dir = Path(output_path)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Создание безопасного имени файла
+        safe_filename = self._generate_safe_filename(
+            url=url,
+            format_id=audio_format_id,
+        )
+        file_path = output_dir / f"{safe_filename}.mp3"
+        
+        # Настройка параметров загрузки
+        ydl_opts = self.ydl_opts.copy()
+        ydl_opts.update({
+            "outtmpl": str(file_path),
+            "format": audio_format_id,
+        })
+        
+        try:
+            logger.debug(f"Загрузка в: {file_path}")
+            with YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+                
+            logger.info(f"Аудио успешно загружено: {file_path}")
+            return YoutubeResult(data=YoutubeData(url=url, path=file_path, is_video=False))
+        
+        except DownloadError as e:
+            error_msg = f"Ошибка загрузки аудио: {e}"
+            logger.error(error_msg)
+            return YoutubeResult(
+                status="error",
+                context=error_msg,
+                code=YoutubeErrorCode.DOWNLOAD_ERROR,
+                data=YoutubeData(url=url)
+            )
+        
+        except Exception as e:
+            error_msg = f"Неожиданная ошибка при загрузке аудио: {e}"
+            logger.exception(error_msg)
+            return YoutubeResult(
+                status="error",
+                context=error_msg,
+                code=YoutubeErrorCode.UNEXPECTED_ERROR,
+                data=YoutubeData(url=url)
+            )
+            
     def get_error_description(self, code: YoutubeErrorCode) -> str:
         """
         Получение человеко-читаемого описания для кода ошибки.
@@ -610,31 +683,31 @@ class YoutubeDownloader(AbstractServiceDownloader):
             Строка описания
         """
         descriptions = {
-            YoutubeErrorCode.SUCCESS: "Операция успешно завершена",
-            YoutubeErrorCode.INVALID_URL: "Предоставленный URL YouTube неверен или не поддерживается",
-            YoutubeErrorCode.EMPTY_URL: "Предоставлен пустой или неверный URL",
-            YoutubeErrorCode.UNSUPPORTED_CONTENT_TYPE: "Тип контента YouTube не поддерживается",
-            YoutubeErrorCode.UNSUPPORTED_MEDIA_TYPE: "Тип медиа не поддерживается",
-            YoutubeErrorCode.CONNECTION_ERROR: "Произошла ошибка сетевого соединения",
-            YoutubeErrorCode.DOWNLOAD_ERROR: "Не удалось загрузить медиа",
-            YoutubeErrorCode.EXTRACTOR_ERROR: "Не удалось извлечь медиа",
-            YoutubeErrorCode.PROXY_ERROR: "Ошибка подключения к прокси",
-            YoutubeErrorCode.LIVE_STREAM_NOT_SUPPORTED: "Прямые трансляции не поддерживаются",
-            YoutubeErrorCode.PLAYLIST_NOT_SUPPORTED: "Плейлисты не поддерживаются",
-            YoutubeErrorCode.ACCOUNT_NOT_SUPPORTED: "Контент аккаунта/канала не поддерживается",
-            YoutubeErrorCode.SHORTS_NOT_SUPPORTED: "YouTube Shorts не поддерживаются",
-            YoutubeErrorCode.POST_NOT_SUPPORTED: "Сообщества не поддерживаются",
-            YoutubeErrorCode.NO_VIDEO_FORMATS_FOUND: "Поддерживаемые видео форматы не найдены",
-            YoutubeErrorCode.NO_AUDIO_FORMATS_FOUND: "Поддерживаемые аудио форматы не найдены",
-            YoutubeErrorCode.NO_THUMBNAILS_FOUND: "Миниатюры не найдены",
-            YoutubeErrorCode.NO_MEDIA_FORMATS_FOUND: "Поддерживаемые медиа форматы не найдены",
-            YoutubeErrorCode.COOKIE_FILE_NOT_FOUND: "Файл cookie не найден",
-            YoutubeErrorCode.OUTPUT_PATH_ERROR: "Ошибка выходного пути",
-            YoutubeErrorCode.FILE_WRITE_ERROR: "Ошибка записи файла",
-            YoutubeErrorCode.UNEXPECTED_ERROR: "Произошла непредвиденная ошибка",
-            YoutubeErrorCode.INITIALIZATION_ERROR: "Не удалось инициализировать загрузчик",
-            YoutubeErrorCode.EXTRACT_INFO_NOT_CALLED: "extract_info() должен быть вызван перед загрузкой",
-            YoutubeErrorCode.YT_DLP_ERROR: "Произошла внутренняя ошибка yt-dlp",
+            YoutubeErrorCode.SUCCESS.value: "Операция успешно завершена",
+            YoutubeErrorCode.INVALID_URL.value: "Предоставленный URL YouTube неверен или не поддерживается",
+            YoutubeErrorCode.EMPTY_URL.value: "Предоставлен пустой или неверный URL",
+            YoutubeErrorCode.UNSUPPORTED_CONTENT_TYPE.value: "Тип контента YouTube не поддерживается",
+            YoutubeErrorCode.UNSUPPORTED_MEDIA_TYPE.value: "Тип медиа не поддерживается",
+            YoutubeErrorCode.CONNECTION_ERROR.value: "Произошла ошибка сетевого соединения",
+            YoutubeErrorCode.DOWNLOAD_ERROR.value: "Не удалось загрузить медиа",
+            YoutubeErrorCode.EXTRACTOR_ERROR.value: "Не удалось извлечь медиа",
+            YoutubeErrorCode.PROXY_ERROR.value: "Ошибка подключения к прокси",
+            YoutubeErrorCode.LIVE_STREAM_NOT_SUPPORTED.value: "Прямые трансляции не поддерживаются",
+            YoutubeErrorCode.PLAYLIST_NOT_SUPPORTED.value: "Плейлисты не поддерживаются",
+            YoutubeErrorCode.ACCOUNT_NOT_SUPPORTED.value: "Контент аккаунта/канала не поддерживается",
+            YoutubeErrorCode.SHORTS_NOT_SUPPORTED.value: "YouTube Shorts не поддерживаются",
+            YoutubeErrorCode.POST_NOT_SUPPORTED.value: "Сообщества не поддерживаются",
+            YoutubeErrorCode.NO_VIDEO_FORMATS_FOUND.value: "Поддерживаемые видео форматы не найдены",
+            YoutubeErrorCode.NO_AUDIO_FORMATS_FOUND.value: "Поддерживаемые аудио форматы не найдены",
+            YoutubeErrorCode.NO_THUMBNAILS_FOUND.value: "Миниатюры не найдены",
+            YoutubeErrorCode.NO_MEDIA_FORMATS_FOUND.value: "Поддерживаемые медиа форматы не найдены",
+            YoutubeErrorCode.COOKIE_FILE_NOT_FOUND.value: "Файл cookie не найден",
+            YoutubeErrorCode.OUTPUT_PATH_ERROR.value: "Ошибка выходного пути",
+            YoutubeErrorCode.FILE_WRITE_ERROR.value: "Ошибка записи файла",
+            YoutubeErrorCode.UNEXPECTED_ERROR.value: "Произошла непредвиденная ошибка",
+            YoutubeErrorCode.INITIALIZATION_ERROR.value: "Не удалось инициализировать загрузчик",
+            YoutubeErrorCode.EXTRACT_INFO_NOT_CALLED.value: "extract_info() должен быть вызван перед загрузкой",
+            YoutubeErrorCode.YT_DLP_ERROR.value: "Произошла внутренняя ошибка yt-dlp",
         }
         return descriptions.get(code, "Неизвестная ошибка")
 
