@@ -59,6 +59,7 @@ class AbstractServiceVideoTypeDict(TypedDict):
     height: NotRequired[Optional[int]]
     language: NotRequired[Optional[str]]
     total_bitrate: NotRequired[Optional[int]]
+    language_preference: NotRequired[Optional[int]]
 
 
 @dataclass
@@ -75,6 +76,7 @@ class AbstractServiceVideo(ABC):
         width: Ширина видео в пикселях (опционально)
         height: Высота видео в пикселях (опционально)
         language: Язык audio дорожки (опционально)
+        language_preference: Приоритет языка (опционально)
         total_bitrate: Общий битрейт видео в kbps (опционально)
     """
     id: str
@@ -86,6 +88,7 @@ class AbstractServiceVideo(ABC):
     height: Optional[int] = None
     language: Optional[str] = None
     total_bitrate: Optional[int] = None
+    language_preference: Optional[int] = None
     
     def to_dict(self) -> AbstractServiceVideoTypeDict:
         """
@@ -104,6 +107,7 @@ class AbstractServiceVideo(ABC):
             "height": self.height,
             "language": self.language,
             "total_bitrate": self.total_bitrate,
+            "language_preference": self.language_preference,
         }
     
 
@@ -115,6 +119,7 @@ class AbstractServiceAudioTypeDict(TypedDict):
     author: NotRequired[Optional[str]]
     language: NotRequired[Optional[str]]
     total_bitrate: NotRequired[Optional[int]]
+    language_preference: NotRequired[Optional[int]]
 
 
 @dataclass
@@ -128,6 +133,7 @@ class AbstractServiceAudio(ABC):
         name: Имя файла или отображаемое название
         author: Автор или исполнитель (опционально)
         language: Язык audio дорожки (опционально)
+        language_preference: Приоритет языка (опционально)
         total_bitrate: Общий битрейт аудио в kbps (опционально)
     """
     id: str
@@ -136,6 +142,7 @@ class AbstractServiceAudio(ABC):
     author: Optional[str] = None
     language: Optional[str] = None
     total_bitrate: Optional[int] = None
+    language_preference: Optional[int] = None
     
     def to_dict(self) -> AbstractServiceAudioTypeDict:
         """
@@ -151,6 +158,7 @@ class AbstractServiceAudio(ABC):
             "author": self.author,
             "language": self.language,
             "total_bitrate": self.total_bitrate,
+            "language_preference": self.language_preference,
         }
         
     

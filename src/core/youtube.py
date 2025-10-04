@@ -427,6 +427,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                         height=format.get("height"),
                         language=format.get("language"),
                         total_bitrate=format.get("tbr"),
+                        language_preference=format.get("language_preference"),
                     )
                 )
                 video_count += 1
@@ -446,6 +447,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                         height=format.get("height"),
                         language=format.get("language"),
                         total_bitrate=format.get("tbr"),
+                        language_preference=format.get("language_preference"),
                     )
                 )
                 video_count += 1
@@ -461,6 +463,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                         url=format["url"],
                         name=format["format_id"],
                         language=format.get("language"),
+                        language_preference=format.get("language_preference"),
                     )
                 )
                 audio_count += 1
@@ -476,6 +479,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
                         url=format["url"],
                         name=format["format_id"],
                         language=format.get("language"),
+                        language_preference=format.get("language_preference"),
                     )
                 )
                 audio_count += 1
@@ -542,6 +546,7 @@ class YoutubeDownloader(AbstractServiceDownloader):
         self,
         url: str,
         video_format_id: str,
+        merge_audio: bool = False,
         output_path: str = "./downloads/youtube/",
     ) -> YoutubeResult:
         """
@@ -571,11 +576,20 @@ class YoutubeDownloader(AbstractServiceDownloader):
         )
         file_path = output_dir / f"{safe_filename}.mp4"
         
+        # Формируем формат
+        format_str = video_format_id
+        if merge_audio:
+            # Добавляем аудио дорожку если видео без звука
+            format_str += "+bestaudio[ext=m4a]"
+            logger.info("Добавление аудио дорожки к видео")
+        else:
+            logger.info("Загрузка только выбранного видео формата")
+        
         # Настройка параметров загрузки
         ydl_opts = self.ydl_opts.copy()
         ydl_opts.update({
             "outtmpl": str(file_path),
-            "format": f'{video_format_id}+bestaudio[ext=m4a]',
+            "format": format_str,
             "merge_output_format": "mp4",
         })
         
@@ -670,6 +684,71 @@ class YoutubeDownloader(AbstractServiceDownloader):
                 context=error_msg,
                 code=YoutubeErrorCode.UNEXPECTED_ERROR,
                 data=YoutubeData(url=url)
+            )
+            
+    def download_direct_media(
+        self,
+        url: str,
+        file_extension: str,
+        output_path: str = "./downloads/youtube/",
+    ) -> YoutubeResult:
+        """
+        Прямое скачивание медиа по готовой ссылке без использования yt-dlp.
+        
+        Args:
+            direct_url: Прямая ссылка на медиафайл
+            output_path: Путь к директории для сохранения файла
+            file_extension: Расширение файла (mp4, mp3, m4a и т.д.)
+            
+        Returns:
+            YoutubeResult: Результат операции загрузки
+        """
+        logger.info(f"Прямое скачивание медиа: url={url}")
+        
+        # Подготовка выходной директории
+        output_dir = Path(output_path)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Генерация безопасного имени файла
+        safe_filename = self._generate_safe_filename(
+            url=url,
+            format_id="direct"
+        )
+        file_path = output_dir / f"{safe_filename}.{file_extension}"
+        
+        # Настройка параметров загрузки
+        ydl_opts = self.ydl_opts.copy()
+        ydl_opts.update({
+            "outtmpl": str(file_path),
+            "merge_output_format": file_extension,
+        })
+        
+        try:
+            logger.debug(f"Загрузка в: {file_path}")
+            with YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+                
+            logger.info(f"Загрузка успешно завершена: {file_path}")
+            return YoutubeResult(data=YoutubeData(url=url, path=file_path))
+
+        except DownloadError as e:
+            error_msg = f"Ошибка загрузки: {e}"
+            logger.error(error_msg)
+            return YoutubeResult(
+                status="error",
+                context=error_msg,
+                code=YoutubeErrorCode.DOWNLOAD_ERROR,
+                data=YoutubeData(url=url)
+            )
+            
+        except Exception as e:
+            error_msg = f"Неожиданная ошибка загрузки: {e}"
+            logger.error(error_msg)
+            return YoutubeResult(
+                status="error",
+                context=error_msg,
+                code=YoutubeErrorCode.UNEXPECTED_ERROR,
+                data=YoutubeData(url=url),
             )
             
     def get_error_description(self, code: YoutubeErrorCode) -> str:
