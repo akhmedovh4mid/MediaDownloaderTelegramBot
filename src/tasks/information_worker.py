@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
+from aiogram.enums import ParseMode, ChatAction
 
 from .app import (
     app,
@@ -9,7 +10,12 @@ from .app import (
     user_session_storage,
 )
 from .common import get_service_downloader
-from .telegram_client import send_photo, send_message, delete_message
+from .telegram_client import (
+    send_photo, 
+    send_message, 
+    delete_message,
+    send_chat_action,
+)
 
 from src.core import (
     AbstractServiceResultTypeDict, 
@@ -34,48 +40,87 @@ class MediaProcessor:
     
     @staticmethod
     def parse_videos(videos: List[AbstractServiceVideoTypeDict]) -> List[MediaButton]:
-        """Парсит видео данные и создает кнопки для разных качеств"""
+        """Парсит видео данные и создает кнопки для разных качеств с учетом приоритета аудио"""
         if not videos:
             return []
-            
-        # Группируем видео по качеству (берем лучшее для каждого разрешения)
+
+        # нормализуем данные
+        for v in videos:
+            if v.get("language"):
+                v["language"] = v["language"].lower().strip()
+            if "language_preference" not in v or v["language_preference"] is None:
+                v["language_preference"] = 0
+            if "total_bitrate" not in v or v["total_bitrate"] is None:
+                v["total_bitrate"] = 0
+
+        # сортируем по правилу:
+        # 1. has_audio (True > False)
+        # 2. language_preference (больше = лучше)
+        # 3. total_bitrate (больше = лучше)
+        videos_sorted = sorted(
+            videos,
+            key=lambda v: (v.get("has_audio", False), v["language_preference"], v["total_bitrate"]),
+            reverse=True
+        )
+
+        # группируем по ширине (оставляем лучший вариант для каждой ширины)
         video_by_quality: Dict[int, AbstractServiceVideoTypeDict] = {}
-        for video in videos:
-            if video["width"] is not None:
-                current_best = video_by_quality.get(video["width"])
-                if not current_best or video.get("total_bitrate", 0) > current_best.get("total_bitrate", 0):
-                    video_by_quality[video["width"]] = video
-        
-        # Создаем кнопки
+        for video in videos_sorted:
+            width = video.get("width")
+            if width:
+                # если на эту ширину еще нет видео → добавляем лучший
+                if width not in video_by_quality:
+                    video_by_quality[width] = video
+
+        # создаем кнопки
         buttons = []
         qualities = sorted(video_by_quality.keys(), reverse=True)
-        
+
         if len(qualities) == 1:
             video = video_by_quality[qualities[0]]
+            label = "🎬 Video" if not video.get("has_audio") else "🎬 Video + Audio"
             buttons.append(MediaButton(
                 row=1,
-                label="🎬 Video",
+                label=label,
                 callback_data=f"video:{video['id']}"
             ))
         else:
             for quality in qualities:
                 video = video_by_quality[quality]
+                label = f"🎬 {video['height']}p"
+                if video.get("has_audio"):
+                    label += " 🔊"
                 buttons.append(MediaButton(
                     row=1,
-                    label=f"🎬 {video['height']}p",
+                    label=label,
                     callback_data=f"video:{video['id']}"
                 ))
-                
+
         return buttons
     
     @staticmethod
-    def parse_audios(audios: List[AbstractServiceAudioTypeDict]) -> Optional[MediaButton]:
+    def parse_audios(audios: List[Dict]) -> Optional["MediaButton"]:
         """Парсит аудио данные и создает кнопку"""
         if not audios:
             return None
-            
-        # Берем лучшее качество аудио (последний элемент обычно лучший)
-        best_audio = audios[-1]
+
+        # нормализуем язык
+        for audio in audios:
+            lang = (audio.get("language") or "").lower().strip()
+            audio["language"] = lang
+            # если нет приоритета, ставим 0
+            if "language_preference" not in audio or audio["language_preference"] is None:
+                audio["language_preference"] = 0
+            # если нет битрейта, ставим 0
+            if "total_bitrate" not in audio or audio["total_bitrate"] is None:
+                audio["total_bitrate"] = 0
+
+        # выбираем лучший трек: сначала по language_preference, потом по bitrate
+        best_audio = max(
+            audios,
+            key=lambda a: (a["language_preference"], a["total_bitrate"])
+        )
+
         return MediaButton(
             row=2,
             label="🎵 Audio",
@@ -140,13 +185,36 @@ def _create_keyboard_layout(buttons: List[Optional[MediaButton]]) -> List[Tuple[
     return keyboard_data
 
 
+def _send_typing_action(chat_id: int):
+    """Отправляет действие 'печатает'"""
+    celery_event_loop.run_until_complete(
+        send_chat_action(chat_id, "typing")
+    )
+
+
+def _send_upload_photo_action(chat_id: int):
+    """Отправляет действие 'загружает фото'"""
+    celery_event_loop.run_until_complete(
+        send_chat_action(chat_id, "upload_photo")
+    )
+
+
 @app.task(name="information_worker.get_media_info", queue="information_queue")
 def get_media_info(chat_id: int, message_id: int, url: str, service: str) -> None:
     if user_activity_queue.get_extract(chat_id=chat_id):
+        _send_typing_action(chat_id=chat_id)
+        celery_event_loop.run_until_complete(
+            send_message(
+                chat_id=chat_id,
+                text="⏳ Уже получаю информацию по предыдущей ссылке. Пожалуйста, дождитесь окончания...",
+                parse_mode=ParseMode.MARKDOWN_V2,
+            )
+        )
         return
     
     user_activity_queue.create_extract(chat_id=chat_id, url=url, service=service)
     
+    _send_typing_action(chat_id)
     message = celery_event_loop.run_until_complete(
         send_message(
             chat_id=chat_id,
@@ -161,6 +229,7 @@ def get_media_info(chat_id: int, message_id: int, url: str, service: str) -> Non
         )
     )
     
+    _send_typing_action(chat_id)
     message = celery_event_loop.run_until_complete(
         send_message(
             chat_id=chat_id,
@@ -168,6 +237,7 @@ def get_media_info(chat_id: int, message_id: int, url: str, service: str) -> Non
         )
     )
     
+    _send_typing_action(chat_id)
     if media := media_cache_storage.get_media(url=url):
         response = AbstractServiceResultTypeDict(
             data=media["data"],
@@ -247,6 +317,9 @@ def _handle_success_response(
         if audio_button := processor.parse_audios(media_data.get("audios", [])):
             buttons.append(audio_button)
     
+    if preview_url:
+        _send_upload_photo_action(chat_id)
+    
     # Отправляем результат пользователю
     keyboard_data = _create_keyboard_layout(buttons)
     
@@ -283,6 +356,8 @@ def _handle_error_response(
     message_id: int,
 ) -> None:
     downloader = get_service_downloader(service=service)
+    
+    _send_typing_action(chat_id)
     
     celery_event_loop.run_until_complete(
         delete_message(

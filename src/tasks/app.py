@@ -3,6 +3,13 @@ from asyncio import new_event_loop
 from celery import Celery
 
 from src.config import settings
+from src.core import (
+    InstagramDownloader,
+    YoutubeDownloader,
+    RedditDownloader,
+    RutubeDownloader,
+    TikTokDownloader,
+)
 from src.databases import (
     UserSessionStorage, 
     MediaCacheStorage,
@@ -37,6 +44,34 @@ app.conf.update(
     }
 )
 
+
+# ======= Utils =======
+instagram_downloader = InstagramDownloader(
+    username=settings.instagram_username,
+    password=settings.instagram_password,
+    cookie_path=settings.instagram_cookie_path,
+)
+
+reddit_downloader = RedditDownloader(
+    client_id=settings.reddit_client_id,
+    client_secret=settings.reddit_client_secret,
+    cookie_path=settings.browser_cookie_path,
+)
+
+rutube_downloader = RutubeDownloader(
+    cookie_path=settings.browser_cookie_path,
+)
+
+tiktok_downloader = TikTokDownloader(
+    cookie_path=settings.browser_cookie_path,
+)
+
+youtube_downloader = YoutubeDownloader(
+    cookie_path=settings.browser_cookie_path,
+)
+
+
+# ======= Storages =======
 user_session_storage = UserSessionStorage(
     host=settings.redis_host,
     port=settings.redis_port,

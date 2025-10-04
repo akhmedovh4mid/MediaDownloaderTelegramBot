@@ -1,6 +1,7 @@
 from typing import List, Tuple, Optional
 from collections import Counter
 
+from aiogram.enums import ChatAction
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.utils.text_decorations import HtmlDecoration
 from aiogram.types import InlineKeyboardMarkup, FSInputFile, Message
@@ -128,6 +129,7 @@ async def send_video(
         "video": video,
         "caption": safe_caption,
         "supports_streaming": supports_streaming,
+        "request_timeout": 300,
         "parse_mode": "HTML",
     }
     if width:
@@ -142,7 +144,7 @@ async def send_video(
 
 async def send_audio(
     chat_id: int,
-    audio_path: str,
+    path: str,
     caption: str = "",
     title: Optional[str] = None,
     performer: Optional[str] = None,
@@ -156,7 +158,7 @@ async def send_audio(
 
     reply_markup = _get_inline_keyboard(keyboard_data) if keyboard_data else None
 
-    audio_file = FSInputFile(audio_path)
+    audio_file = FSInputFile(path)
     send_params = {
         "chat_id": chat_id,
         "audio": audio_file,
@@ -175,3 +177,28 @@ async def send_audio(
         send_params["thumbnail"] = FSInputFile(thumbnail_path)
 
     return await telegram_bot.bot.send_audio(**send_params)
+
+
+async def send_chat_action(chat_id: int, action: str):
+    """
+    Отправляет действие чата (ChatAction) чтобы показать статус отправки.
+    """
+    telegram_bot = create_bot_for_worker()
+    
+    action_map = {
+        "upload_video": ChatAction.UPLOAD_VIDEO,
+        "upload_audio": ChatAction.UPLOAD_VOICE,
+        "upload_photo": ChatAction.UPLOAD_PHOTO,
+        "typing": ChatAction.TYPING,
+    }
+    
+    chat_action = action_map.get(action, ChatAction.TYPING)
+    
+    try:
+        await telegram_bot.bot.send_chat_action(
+            chat_id=chat_id,
+            action=chat_action
+        )
+    except Exception as e:
+        # Игнорируем ошибки отправки ChatAction
+        pass

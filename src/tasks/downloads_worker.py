@@ -1,11 +1,22 @@
+from aiogram.enums import ParseMode
+
 from .common import get_service_downloader
 from .app import app, celery_event_loop, user_activity_queue
-from .telegram_client import send_video, send_message, send_audio, delete_message
+from .telegram_client import (
+    send_video, 
+    send_audio, 
+    send_message, 
+    delete_message,
+    send_chat_action,
+)
 
 from src.config import settings
+from src.core import AbstractServiceResult
 
 
-def _notify_user_start(chat_id: int, media_type: str) -> int:
+def _notify_user_start(
+    chat_id: int
+) -> int:
     """
     Отправляет сообщение пользователю о начале загрузки.
     Возвращает ID сообщения для дальнейшего удаления или обновления.
@@ -13,13 +24,19 @@ def _notify_user_start(chat_id: int, media_type: str) -> int:
     message = celery_event_loop.run_until_complete(
         send_message(
             chat_id=chat_id,
-            text=f"📥 Начинаю загрузку {media_type}... Пожалуйста, подождите ⏳"
+            text="⏳ Загрузка началась, подождите...",
         )
     )
     return message.message_id
 
 
-def _handle_download_result(chat_id: int, message_id: int, result, media_type: str, **kwargs):
+def _handle_download_result(
+    chat_id: int, 
+    message_id: int, 
+    media_type: str, 
+    result: AbstractServiceResult, 
+    **kwargs,
+):
     """
     Обрабатывает результат загрузки: отправка медиа или сообщение об ошибке.
     """
@@ -28,9 +45,27 @@ def _handle_download_result(chat_id: int, message_id: int, result, media_type: s
 
     if result.status == "success":
         if media_type == "video":
+            celery_event_loop.run_until_complete(
+                send_chat_action(chat_id, "upload_video")
+            )
             celery_event_loop.run_until_complete(send_video(chat_id=chat_id, **kwargs))
+            celery_event_loop.run_until_complete(
+                send_message(
+                    chat_id=chat_id, 
+                    text="✅ Видео успешно загружено и отправлено!",
+                )
+            )
         elif media_type == "audio":
+            celery_event_loop.run_until_complete(
+                send_chat_action(chat_id, "upload_audio")
+            )
             celery_event_loop.run_until_complete(send_audio(chat_id=chat_id, **kwargs))
+            celery_event_loop.run_until_complete(
+                send_message(
+                    chat_id=chat_id, 
+                    text="✅ Аудио успешно загружено и отправлено!",
+                )
+            )
     else:
         celery_event_loop.run_until_complete(
             send_message(chat_id=chat_id, text=f"❌ Ошибка при загрузке {media_type}!")
@@ -41,20 +76,29 @@ def _handle_download_result(chat_id: int, message_id: int, result, media_type: s
 
 
 @app.task
-def download_youtube_video(chat_id: int, message_id: int, video_id: str, url: str, width: int, height: int) -> None:
-    msg_id = _notify_user_start(chat_id, "видео YouTube")
+def download_youtube_video(
+    url: str, 
+    width: int, 
+    height: int,
+    chat_id: int, 
+    video_id: str, 
+    message_id: int, 
+    merge_audio: bool,
+) -> None:
+    msg_id = _notify_user_start(chat_id=chat_id)
     
     downloader = get_service_downloader(service="youtube")
-    result = downloader.download_video(
+    result: AbstractServiceResult = downloader.download_video(
         url=url, 
+        merge_audio=merge_audio,
         video_format_id=video_id, 
-        output_path=settings.media_storage_path
+        output_path=settings.media_storage_path,
     )
     
     _handle_download_result(
-        chat_id, 
-        msg_id, 
-        result, 
+        chat_id=chat_id, 
+        message_id=msg_id, 
+        result=result, 
         media_type="video", 
         path=result.data.path, 
         width=width, 
@@ -63,86 +107,126 @@ def download_youtube_video(chat_id: int, message_id: int, video_id: str, url: st
 
 
 @app.task
-def download_reddit_video(chat_id: int, message_id: int, video_id: str, url: str, width: int, height: int) -> None:
-    msg_id = _notify_user_start(chat_id, "видео Reddit")
+def download_reddit_video(
+    url: str, 
+    width: int, 
+    height: int,
+    chat_id: int, 
+    video_id: str, 
+    message_id: int, 
+    merge_audio: bool,
+) -> None:
+    msg_id = _notify_user_start(chat_id=chat_id)
     
     downloader = get_service_downloader(service="reddit")
-    result = downloader.download_video(
+    result: AbstractServiceResult = downloader.download_video(
         url=url, 
+        merge_audio=merge_audio,
         video_format_id=video_id, 
         output_path=settings.media_storage_path
     )
     
     _handle_download_result(
-        chat_id, 
-        msg_id, 
-        result, 
+        width=width, 
+        result=result, 
+        height=height,
+        chat_id=chat_id, 
+        message_id=msg_id, 
         media_type="video", 
         path=result.data.path, 
-        width=width, 
-        height=height
     )
 
-
 @app.task
-def download_rutube_video(chat_id: int, message_id: int, video_id: str, url: str, width: int, height: int) -> None:
-    msg_id = _notify_user_start(chat_id, "видео RuTube")
+def download_rutube_video(
+    url: str, 
+    width: int, 
+    height: int,
+    chat_id: int, 
+    video_id: str, 
+    message_id: int, 
+    merge_audio: bool,
+) -> None:
+    msg_id = _notify_user_start(chat_id=chat_id)
     
     downloader = get_service_downloader(service="rutube")
-    result = downloader.download_video(
+    result: AbstractServiceResult = downloader.download_video(
         url=url, 
+        merge_audio=merge_audio,
         video_format_id=video_id, 
         output_path=settings.media_storage_path
     )
     
     _handle_download_result(
-        chat_id, 
-        msg_id, 
-        result, 
+        width=width, 
+        height=height,
+        result=result, 
+        chat_id=chat_id, 
+        message_id=msg_id, 
         media_type="video", 
         path=result.data.path, 
-        width=width, 
-        height=height
     )
 
 
 @app.task
-def download_tiktok_video(chat_id: int, message_id: int, video_id: str, url: str, width: int, height: int) -> None:
-    msg_id = _notify_user_start(chat_id, "видео TikTok")
+def download_tiktok_video(
+    url: str, 
+    width: int, 
+    height: int,
+    chat_id: int, 
+    video_id: str, 
+    message_id: int, 
+    merge_audio: bool,
+) -> None:
+    msg_id = _notify_user_start(chat_id=chat_id)
     
     downloader = get_service_downloader(service="tiktok")
-    result = downloader.download_video(
+    result: AbstractServiceResult = downloader.download_video(
         url=url, 
+        merge_audio=merge_audio,
         video_format_id=video_id, 
         output_path=settings.media_storage_path
     )
 
     _handle_download_result(
-        chat_id, 
-        msg_id, 
-        result, 
+        width=width, 
+        height=height,
+        result=result, 
+        chat_id=chat_id, 
+        message_id=msg_id, 
         media_type="video", 
         path=result.data.path, 
-        width=width, 
-        height=height
     )
 
 
 @app.task
-def download_audio(chat_id: int, message_id: int, service: str, audio_id: str, url: str) -> None:
-    msg_id = _notify_user_start(chat_id, "аудио")
+def download_audio(
+    url: str,
+    chat_id: int, 
+    service: str, 
+    audio_id: str, 
+    message_id: int, 
+    direct: bool = False,
+) -> None:
+    msg_id = _notify_user_start(chat_id=chat_id)
     
     downloader = get_service_downloader(service=service)
-    result = downloader.download_audio(
-        url=url, 
-        audio_format_id=audio_id, 
-        output_path=settings.media_storage_path
-    )
+    if not direct:
+        result: AbstractServiceResult = downloader.download_audio(
+            url=url, 
+            audio_format_id=audio_id, 
+            output_path=settings.media_storage_path
+        )
+    else:
+        result: AbstractServiceResult = downloader.download_direct_media(
+            url=url, 
+            file_extension="mp3", 
+            output_path=settings.media_storage_path
+        )
 
     _handle_download_result(
-        chat_id, 
-        msg_id, 
-        result, 
+        result=result, 
+        chat_id=chat_id, 
+        message_id=msg_id, 
         media_type="audio", 
-        path=result.data.path
+        path=result.data.path,
     )
